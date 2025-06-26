@@ -11,6 +11,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, MapPin } from 'lucide-react';
 
+// Declare Razorpay interface
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 interface RazorpayOptions {
   key: string;
   amount: string;
@@ -31,6 +38,9 @@ interface RazorpayOptions {
   theme: {
     color: string;
   };
+  modal: {
+    ondismiss: () => void;
+  };
 }
 
 const Checkout = () => {
@@ -42,6 +52,7 @@ const Checkout = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -50,6 +61,7 @@ const Checkout = () => {
     }
     fetchCartItems();
     fetchAddresses();
+    loadRazorpayScript();
   }, [user, navigate]);
 
   useEffect(() => {
@@ -95,10 +107,25 @@ const Checkout = () => {
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
+      // Check if Razorpay is already loaded
+      if (window.Razorpay) {
+        setRazorpayLoaded(true);
+        resolve(true);
+        return;
+      }
+
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
+      script.onload = () => {
+        console.log('Razorpay script loaded successfully');
+        setRazorpayLoaded(true);
+        resolve(true);
+      };
+      script.onerror = (error) => {
+        console.error('Failed to load Razorpay script:', error);
+        setRazorpayLoaded(false);
+        resolve(false);
+      };
       document.body.appendChild(script);
     });
   };
@@ -153,17 +180,26 @@ const Checkout = () => {
       return;
     }
 
+    if (!razorpayLoaded) {
+      toast.error('Payment system is loading. Please try again in a moment.');
+      await loadRazorpayScript();
+      if (!razorpayLoaded) {
+        toast.error('Unable to load payment system. Please refresh the page.');
+        return;
+      }
+    }
+
+    // Check if Razorpay key is configured
+    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+    if (!razorpayKey || razorpayKey === 'rzp_test_your_key_id_here') {
+      toast.error('Payment system not configured. Please contact support.');
+      console.error('Razorpay key not configured properly');
+      return;
+    }
+
     setProcessing(true);
 
     try {
-      const res = await loadRazorpayScript();
-
-      if (!res) {
-        toast.error('Razorpay SDK failed to load. Are you online?');
-        setProcessing(false);
-        return;
-      }
-
       // Create order in our database
       const order = await createOrder();
       if (!order) {
@@ -174,15 +210,17 @@ const Checkout = () => {
       const address = addresses.find(addr => addr.id === selectedAddress);
 
       const options: RazorpayOptions = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: String(totalAmount * 100), // Amount in paisa
+        key: razorpayKey,
+        amount: String(Math.round(totalAmount * 100)), // Amount in paisa
         currency: 'INR',
         name: 'RakhiMart',
         description: `Order #${order.order_number}`,
-        image: '/favicon.ico',
+        image: `${window.location.origin}/favicon.ico`,
         order_id: order.id, // Using our database order ID
         handler: async function (response: any) {
           try {
+            console.log('Payment successful:', response);
+            
             // Update order with payment details
             const { error: updateError } = await supabase
               .from('orders')
@@ -221,28 +259,52 @@ const Checkout = () => {
         theme: {
           color: '#DC143C',
         },
+        modal: {
+          ondismiss: function() {
+            console.log('Payment modal closed');
+            setProcessing(false);
+          }
+        }
       };
 
-      const rzp1 = new (window as any).Razorpay(options);
+      console.log('Initializing Razorpay with options:', options);
+      
+      const rzp1 = new window.Razorpay(options);
       
       rzp1.on('payment.failed', function (response: any) {
-        toast.error(`Payment failed: ${response.error.description}`);
         console.error('Payment failed:', response.error);
+        toast.error(`Payment failed: ${response.error.description}`);
         
         // Update order status to failed
         supabase
           .from('orders')
           .update({ status: 'cancelled', payment_status: 'failed' })
           .eq('id', order.id);
+        
+        setProcessing(false);
       });
 
       rzp1.open();
     } catch (error) {
       console.error('Payment initiation error:', error);
       toast.error('Failed to initiate payment. Please try again.');
-    } finally {
       setProcessing(false);
     }
+  };
+
+  // Test payment function for debugging
+  const testPayment = () => {
+    console.log('Testing Razorpay integration...');
+    console.log('Razorpay loaded:', razorpayLoaded);
+    console.log('Razorpay key:', import.meta.env.VITE_RAZORPAY_KEY_ID);
+    console.log('Window.Razorpay:', window.Razorpay);
+    
+    if (!window.Razorpay) {
+      toast.error('Razorpay not loaded. Check console for errors.');
+      return;
+    }
+    
+    toast.success('Razorpay is working! You can proceed with payment.');
   };
 
   if (loading) {
@@ -390,10 +452,25 @@ const Checkout = () => {
                     <span>Total:</span>
                     <span>₹{totalAmount.toFixed(2)}</span>
                   </div>
+                  
+                  {/* Debug Info */}
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <div>Razorpay Status: {razorpayLoaded ? '✅ Loaded' : '❌ Not Loaded'}</div>
+                    <div>Key Configured: {import.meta.env.VITE_RAZORPAY_KEY_ID && import.meta.env.VITE_RAZORPAY_KEY_ID !== 'rzp_test_your_key_id_here' ? '✅ Yes' : '❌ No'}</div>
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={testPayment}
+                    className="w-full mb-2"
+                  >
+                    Test Razorpay Connection
+                  </Button>
+                  
                   <Button
                     className="w-full bg-festive-red hover:bg-festive-red/90 py-3 text-lg"
                     onClick={handlePayment}
-                    disabled={processing || totalAmount === 0 || !selectedAddress}
+                    disabled={processing || totalAmount === 0 || !selectedAddress || !razorpayLoaded}
                   >
                     {processing ? 'Processing...' : 'Pay with Razorpay'}
                   </Button>
