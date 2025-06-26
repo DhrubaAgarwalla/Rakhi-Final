@@ -13,6 +13,7 @@ import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
+import Addresses from "./pages/Addresses";
 import CustomerService from "./pages/CustomerService";
 import ContactUs from "./pages/ContactUs";
 import ShippingInfo from "./pages/ShippingInfo";
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/cart" element={<Cart />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/addresses" element={<Addresses />} />
             <Route path="/customer-service" element={<CustomerService />} />
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/shipping-info" element={<ShippingInfo />} />
