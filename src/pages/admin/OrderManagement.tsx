@@ -78,7 +78,7 @@ const OrderManagement = () => {
       const { error } = await supabase
         .from('orders')
         .update({ 
-          status: newStatus,
+          status: newStatus as 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled',
           updated_at: new Date().toISOString()
         })
         .eq('id', orderId);
