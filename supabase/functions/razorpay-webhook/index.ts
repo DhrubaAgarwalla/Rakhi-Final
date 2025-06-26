@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from '@supabase/supabase-js'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,15 +15,15 @@ serve(async (req) => {
 
   try {
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      process.env.SUPABASE_URL ?? '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
     )
 
     const signature = req.headers.get('x-razorpay-signature')
     const body = await req.text()
     
     // Verify webhook signature
-    const webhookSecret = Deno.env.get('RAZORPAY_WEBHOOK_SECRET')
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
     if (!webhookSecret) {
       console.error('Webhook secret not configured')
       return new Response('Webhook secret not configured', { 

@@ -1,1 +1,7 @@
 project_id = "tdeklybmmhjmhhboveyp"
+
+[functions]
+  name = "razorpay-webhook"
+  import_map = "./functions/import_map.json"
+  entrypoint = "functions/razorpay-webhook/index.ts"
+  path = "supabase/functions/razorpay-webhook"
