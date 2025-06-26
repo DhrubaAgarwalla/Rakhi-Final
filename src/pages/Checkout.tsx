@@ -93,12 +93,6 @@ const Checkout = () => {
     }
   };
 
-  const generateOrderNumber = () => {
-    const timestamp = Date.now().toString();
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `RM${timestamp.slice(-6)}${random}`;
-  };
-
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       const script = document.createElement('script');
@@ -116,15 +110,13 @@ const Checkout = () => {
     }
 
     const address = addresses.find(addr => addr.id === selectedAddress);
-    const orderNumber = generateOrderNumber();
 
     try {
-      // Create order in database
+      // Create order in database with auto-generated order number
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
-          order_number: orderNumber,
           total_amount: totalAmount,
           status: 'pending',
           shipping_address: address

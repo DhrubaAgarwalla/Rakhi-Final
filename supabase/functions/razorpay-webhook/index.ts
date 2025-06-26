@@ -25,15 +25,27 @@ serve(async (req) => {
     // Verify webhook signature
     const webhookSecret = Deno.env.get('RAZORPAY_WEBHOOK_SECRET')
     if (!webhookSecret) {
-      throw new Error('Webhook secret not configured')
+      console.error('Webhook secret not configured')
+      return new Response('Webhook secret not configured', { 
+        status: 500,
+        headers: corsHeaders 
+      })
     }
 
-    // Create expected signature
-    const crypto = await import('node:crypto')
-    const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(body)
-      .digest('hex')
+    // Create expected signature using Web Crypto API
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(webhookSecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+    
+    const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(body))
+    const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
 
     if (signature !== expectedSignature) {
       console.error('Invalid webhook signature')
@@ -79,13 +91,12 @@ serve(async (req) => {
 async function handlePaymentCaptured(supabaseClient: any, payment: any) {
   console.log('Payment captured:', payment.id)
   
-  // Update order status
+  // Update order status based on payment ID
   const { error } = await supabaseClient
     .from('orders')
     .update({
       status: 'confirmed',
       payment_status: 'completed',
-      payment_id: payment.id,
       updated_at: new Date().toISOString()
     })
     .eq('payment_id', payment.id)
@@ -99,13 +110,12 @@ async function handlePaymentCaptured(supabaseClient: any, payment: any) {
 async function handlePaymentFailed(supabaseClient: any, payment: any) {
   console.log('Payment failed:', payment.id)
   
-  // Update order status
+  // Update order status based on payment ID
   const { error } = await supabaseClient
     .from('orders')
     .update({
       status: 'cancelled',
       payment_status: 'failed',
-      payment_id: payment.id,
       updated_at: new Date().toISOString()
     })
     .eq('payment_id', payment.id)
