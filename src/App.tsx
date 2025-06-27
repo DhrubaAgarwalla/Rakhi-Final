@@ -7,7 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import AdminRoute from "@/components/admin/AdminRoute";
 import Index from "./pages/Index";
 import WhatsAppButton from "./components/layout/WhatsAppButton";
-import MobileNavbar from "./components/layout/MobileNavbar";
+
 import Auth from "./pages/Auth";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -44,7 +44,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <WhatsAppButton />
-          <MobileNavbar />
+          
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />

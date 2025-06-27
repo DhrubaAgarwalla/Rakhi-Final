@@ -1,6 +1,12 @@
 import React from 'react';
 import { Heart, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -78,23 +84,51 @@ const Footer = () => {
           </div>
 
           {/* Quick Links & Customer Service */}
-          {footerSections.map((section, index) => (
-            <div key={index}>
-              <h3 className="text-lg font-semibold mb-6">{section.title}</h3>
-              <ul className="space-y-3">
-                {section.links.map((link, linkIndex) => (
-                  <li key={linkIndex}>
-                    <Link 
-                      to={link.href} 
-                      className="text-gray-300 hover:text-festive-gold transition-colors duration-200 text-sm hover:translate-x-1 transform inline-block"
-                    >
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+          <div className="col-span-1 md:col-span-2 lg:col-span-2">
+            <div className="hidden md:grid md:grid-cols-2 gap-8">
+              {footerSections.map((section, index) => (
+                <div key={index}>
+                  <h3 className="text-lg font-semibold mb-6">{section.title}</h3>
+                  <ul className="space-y-3">
+                    {section.links.map((link, linkIndex) => (
+                      <li key={linkIndex}>
+                        <Link 
+                          to={link.href} 
+                          className="text-gray-300 hover:text-festive-gold transition-colors duration-200 text-sm hover:translate-x-1 transform inline-block"
+                        >
+                          {link.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
-          ))}
+
+            <div className="md:hidden">
+              <Accordion type="single" collapsible className="w-full">
+                {footerSections.map((section, index) => (
+                  <AccordionItem value={`item-${index}`} key={index}>
+                    <AccordionTrigger>{section.title}</AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="space-y-3">
+                        {section.links.map((link, linkIndex) => (
+                          <li key={linkIndex}>
+                            <Link 
+                              to={link.href} 
+                              className="text-gray-300 hover:text-festive-gold transition-colors duration-200 text-sm"
+                            >
+                              {link.name}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          </div>
 
           {/* Contact Info */}
           <div>
@@ -184,10 +218,6 @@ const Footer = () => {
             <div className="text-center">
               <div className="text-festive-gold font-bold text-lg">Free</div>
               <div className="text-xs text-gray-400">Shipping</div>
-            </div>
-            <div className="text-center">
-              <div className="text-festive-gold font-bold text-lg">4.8★</div>
-              <div className="text-xs text-gray-400">Rating</div>
             </div>
           </div>
         </div>
