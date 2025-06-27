@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import AdminRoute from "@/components/admin/AdminRoute";
 import Index from "./pages/Index";
 import WhatsAppButton from "./components/layout/WhatsAppButton";
+import MobileNavbar from "./components/layout/MobileNavbar";
 import Auth from "./pages/Auth";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -14,6 +15,7 @@ import Cart from "./pages/Cart";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import Addresses from "./pages/Addresses";
+import Wishlist from "./pages/Wishlist";
 import CustomerService from "./pages/CustomerService";
 import ContactUs from "./pages/ContactUs";
 import ShippingInfo from "./pages/ShippingInfo";
@@ -42,6 +44,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <WhatsAppButton />
+          <MobileNavbar />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -52,6 +55,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/addresses" element={<Addresses />} />
+            <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/customer-service" element={<CustomerService />} />
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/shipping-info" element={<ShippingInfo />} />

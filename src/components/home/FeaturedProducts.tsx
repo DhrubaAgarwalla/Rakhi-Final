@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star, Heart, ShoppingCart, Eye, Sparkles } from 'lucide-react';
+import { Star, Heart, ShoppingCart, Eye, Sparkles, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';

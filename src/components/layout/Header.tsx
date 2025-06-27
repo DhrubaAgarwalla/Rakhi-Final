@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShoppingCart, User, Menu, X, Shield, MapPin, Heart } from 'lucide-react';
+import { Search, ShoppingCart, User, Shield, MapPin, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,16 +14,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [cartItemCount, setCartItemCount] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -52,7 +46,6 @@ const Header = () => {
     if (searchQuery.trim()) {
       navigate(`/products?search=${searchQuery}`);
       setIsSearchOpen(false);
-      setIsMenuOpen(false);
     }
   };
 
@@ -77,7 +70,7 @@ const Header = () => {
         🎉 Free Shipping on Orders Above ₹499 | Raksha Bandhan Special Collection Now Live! 🎉
       </div>
 
-      <header className="bg-white shadow-lg sticky top-0 z-50 border-b border-gray-100">
+      <header className="bg-white shadow-lg sticky top-0 z-50 border-b border-gray-100 hidden lg:block">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
@@ -128,14 +121,7 @@ const Header = () => {
             {/* User Actions */}
             <div className="flex items-center space-x-2 lg:space-x-4">
               {/* Mobile Search */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
-              >
-                <Search className="h-5 w-5" />
-              </Button>
+
 
               {/* Wishlist */}
               <Button variant="ghost" size="icon" className="hidden sm:flex relative">
@@ -205,137 +191,10 @@ const Header = () => {
                   </Button>
                 </Link>
               )}
-
-              {/* Mobile Menu Toggle */}
-              <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="lg:hidden">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-80">
-                  <SheetHeader>
-                    <SheetTitle className="text-left">
-                      <div className="flex items-center space-x-2">
-                        <div className="bg-festive-gradient p-2 rounded-lg">
-                          <span className="text-white font-bold text-lg">R</span>
-                        </div>
-                        <div>
-                          <h2 className="font-playfair text-xl font-bold text-festive-red">RakhiMart</h2>
-                          <p className="text-xs text-gray-500 -mt-1">Celebrate with Love</p>
-                        </div>
-                      </div>
-                    </SheetTitle>
-                  </SheetHeader>
-                  
-                  <div className="mt-6 space-y-6">
-                    {/* Mobile Search */}
-                    <form onSubmit={handleSearch} className="space-y-2">
-                      <Input
-                        type="text"
-                        placeholder="Search for Rakhi..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full"
-                      />
-                      <Button type="submit" className="w-full bg-festive-gradient hover:opacity-90">
-                        <Search className="h-4 w-4 mr-2" />
-                        Search
-                      </Button>
-                    </form>
-
-                    {/* Mobile Navigation */}
-                    <nav className="space-y-4">
-                      {navigationItems.map((item) => (
-                        <Link
-                          key={item.name}
-                          to={item.href}
-                          className="block text-gray-700 hover:text-festive-red transition-colors font-medium py-2 border-b border-gray-100"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          {item.name}
-                        </Link>
-                      ))}
-                    </nav>
-
-                    {/* User Actions in Mobile */}
-                    {user && (
-                      <div className="space-y-4 pt-4 border-t border-gray-200">
-                        <Link
-                          to="/profile"
-                          className="flex items-center space-x-3 text-gray-700 hover:text-festive-red transition-colors"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <User className="h-5 w-5" />
-                          <span>Profile</span>
-                        </Link>
-                        <Link
-                          to="/orders"
-                          className="flex items-center space-x-3 text-gray-700 hover:text-festive-red transition-colors"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <ShoppingCart className="h-5 w-5" />
-                          <span>Orders</span>
-                        </Link>
-                        <Link
-                          to="/addresses"
-                          className="flex items-center space-x-3 text-gray-700 hover:text-festive-red transition-colors"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <MapPin className="h-5 w-5" />
-                          <span>Addresses</span>
-                        </Link>
-                        {isAdmin && (
-                          <Link
-                            to="/admin/dashboard"
-                            className="flex items-center space-x-3 text-purple-600 hover:text-purple-700 transition-colors"
-                            onClick={() => setIsMenuOpen(false)}
-                          >
-                            <Shield className="h-5 w-5" />
-                            <span>Admin Dashboard</span>
-                          </Link>
-                        )}
-                        <button
-                          onClick={() => {
-                            handleSignOut();
-                            setIsMenuOpen(false);
-                          }}
-                          className="flex items-center space-x-3 text-red-600 hover:text-red-700 transition-colors w-full text-left"
-                        >
-                          <span>Sign Out</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </SheetContent>
-              </Sheet>
             </div>
           </div>
 
-          {/* Mobile Search Bar */}
-          {isSearchOpen && (
-            <div className="lg:hidden py-4 border-t border-gray-100 animate-fade-in">
-              <form onSubmit={handleSearch}>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Search for Rakhi..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pr-12 pl-4 py-3 border-2 border-gray-200 focus:border-festive-red rounded-full"
-                    autoFocus
-                  />
-                  <Button 
-                    type="submit" 
-                    size="sm" 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-festive-gradient hover:opacity-90 rounded-full h-10 w-10 p-0"
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
-              </form>
-            </div>
-          )}
+
         </div>
       </header>
     </>

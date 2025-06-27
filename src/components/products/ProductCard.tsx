@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, ShoppingCart } from 'lucide-react';
+import { Star, ShoppingCart, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -14,8 +14,74 @@ interface ProductCardProps {
   viewMode?: 'grid' | 'list';
 }
 
+interface WishlistItem {
+  id: string;
+  user_id: string;
+  product_id: string;
+}
+
 const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
   const { user } = useAuth();
+  const [isWishlisted, setIsWishlisted] = React.useState(false);
+
+  React.useEffect(() => {
+    if (user) {
+      checkWishlistStatus();
+    }
+  }, [user, product.id]);
+
+  const checkWishlistStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from<WishlistItem>('wishlist_items')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('product_id', product.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
+      setIsWishlisted(!!data);
+    } catch (error) {
+      console.error('Error checking wishlist status:', error);
+    }
+  };
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast.error('Please sign in to manage your wishlist');
+      return;
+    }
+
+    try {
+      if (isWishlisted) {
+        const { error } = await supabase
+          .from('wishlist_items')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', product.id);
+
+        if (error) throw error;
+        setIsWishlisted(false);
+        toast.success('Removed from wishlist!');
+      } else {
+        const { error } = await supabase
+          .from('wishlist_items')
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+          });
+
+        if (error) throw error;
+        setIsWishlisted(true);
+        toast.success('Added to wishlist!');
+      }
+    } catch (error) {
+      toast.error('Failed to update wishlist');
+    }
+  };
 
   const addToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -76,10 +142,15 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
                       <span className="text-gray-500 line-through">₹{product.original_price}</span>
                     )}
                   </div>
-                  <Button size="sm" onClick={addToCart}>
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Add to Cart
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleWishlistToggle} variant="outline">
+                      <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
+                    </Button>
+                    <Button size="sm" onClick={addToCart}>
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Add to Cart
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -127,9 +198,14 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
                 <span className="text-gray-500 line-through">₹{product.original_price}</span>
               )}
             </div>
-            <Button size="sm" onClick={addToCart}>
-              <ShoppingCart className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleWishlistToggle} variant="outline">
+                <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
+              </Button>
+              <Button size="sm" onClick={addToCart}>
+                <ShoppingCart className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
