@@ -1,29 +1,50 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from '@supabase/supabase-js'
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-razorpay-signature',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL ?? '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables')
+      return new Response('Server configuration error', { 
+        status: 500,
+        headers: corsHeaders 
+      })
+    }
+
+    // Create Supabase client
+    const supabaseClient = {
+      from: (table: string) => ({
+        update: (data: any) => ({
+          eq: (column: string, value: any) => 
+            fetch(`${supabaseUrl}/rest/v1/${table}?${column}=eq.${value}`, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'Content-Type': 'application/json',
+                'apikey': supabaseServiceKey
+              },
+              body: JSON.stringify(data)
+            }).then(res => res.ok ? { error: null } : { error: res.statusText })
+        })
+      })
+    }
 
     const signature = req.headers.get('x-razorpay-signature')
     const body = await req.text()
     
     // Verify webhook signature
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
+    const webhookSecret = Deno.env.get('RAZORPAY_WEBHOOK_SECRET')
     if (!webhookSecret) {
       console.error('Webhook secret not configured')
       return new Response('Webhook secret not configured', { 
