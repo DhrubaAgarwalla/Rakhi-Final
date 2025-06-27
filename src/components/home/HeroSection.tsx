@@ -33,7 +33,7 @@ const HeroSection = () => {
               {/* Badge */}
               <div className="inline-flex items-center space-x-2 bg-white/90 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg animate-fade-in">
                 <Heart className="h-5 w-5 text-festive-red fill-current" />
-                <span className="text-sm font-semibold text-gray-800">Raksha Bandhan Special Collection 2024</span>
+                <span className="text-sm font-semibold text-gray-800">Raksha Bandhan Special Collection 2025</span>
               </div>
 
               {/* Main Heading */}
