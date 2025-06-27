@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,6 +46,7 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
   };
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
+    console.log('Wishlist button clicked');
     e.preventDefault();
     e.stopPropagation();
 
