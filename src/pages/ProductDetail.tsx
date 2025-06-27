@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,10 +17,18 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   useEffect(() => {
     fetchProduct();
   }, [slug]);
+
+  useEffect(() => {
+    if (user && product) {
+      checkWishlistStatus();
+    }
+  }, [user, product]);
 
   const fetchProduct = async () => {
     const { data } = await supabase
@@ -38,6 +45,68 @@ const ProductDetail = () => {
 
     setProduct(data);
     setLoading(false);
+  };
+
+  const checkWishlistStatus = async () => {
+    if (!user || !product) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('wishlist_items')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('product_id', product.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking wishlist status:', error);
+        return;
+      }
+      
+      setIsWishlisted(!!data);
+    } catch (error) {
+      console.error('Error checking wishlist status:', error);
+    }
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!user) {
+      toast.error('Please sign in to manage your wishlist');
+      return;
+    }
+
+    if (wishlistLoading) return;
+
+    setWishlistLoading(true);
+    try {
+      if (isWishlisted) {
+        const { error } = await supabase
+          .from('wishlist_items')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', product.id);
+
+        if (error) throw error;
+        setIsWishlisted(false);
+        toast.success('Removed from wishlist!');
+      } else {
+        const { error } = await supabase
+          .from('wishlist_items')
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+          });
+
+        if (error) throw error;
+        setIsWishlisted(true);
+        toast.success('Added to wishlist!');
+      }
+    } catch (error) {
+      console.error('Wishlist error:', error);
+      toast.error('Failed to update wishlist');
+    } finally {
+      setWishlistLoading(false);
+    }
   };
 
   const addToCart = async () => {
@@ -205,8 +274,13 @@ const ProductDetail = () => {
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 {product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
               </Button>
-              <Button variant="outline" size="icon">
-                <Heart className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={handleWishlistToggle}
+                disabled={wishlistLoading}
+              >
+                <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
               </Button>
               <Button variant="outline" size="icon">
                 <Share2 className="h-4 w-4" />

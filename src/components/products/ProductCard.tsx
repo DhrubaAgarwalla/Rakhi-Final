@@ -13,15 +13,10 @@ interface ProductCardProps {
   viewMode?: 'grid' | 'list';
 }
 
-interface WishlistItem {
-  id: string;
-  user_id: string;
-  product_id: string;
-}
-
 const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
   const { user } = useAuth();
   const [isWishlisted, setIsWishlisted] = React.useState(false);
+  const [wishlistLoading, setWishlistLoading] = React.useState(false);
 
   React.useEffect(() => {
     if (user) {
@@ -30,15 +25,21 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
   }, [user, product.id]);
 
   const checkWishlistStatus = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
-        .from<WishlistItem>('wishlist_items')
-        .select('*')
-        .eq('user_id', user?.id)
+        .from('wishlist_items')
+        .select('id')
+        .eq('user_id', user.id)
         .eq('product_id', product.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking wishlist status:', error);
+        return;
+      }
+      
       setIsWishlisted(!!data);
     } catch (error) {
       console.error('Error checking wishlist status:', error);
@@ -46,7 +47,6 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
   };
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
-    console.log('Wishlist button clicked');
     e.preventDefault();
     e.stopPropagation();
 
@@ -55,6 +55,9 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
       return;
     }
 
+    if (wishlistLoading) return;
+
+    setWishlistLoading(true);
     try {
       if (isWishlisted) {
         const { error } = await supabase
@@ -79,7 +82,10 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
         toast.success('Added to wishlist!');
       }
     } catch (error) {
+      console.error('Wishlist error:', error);
       toast.error('Failed to update wishlist');
+    } finally {
+      setWishlistLoading(false);
     }
   };
 
@@ -106,6 +112,7 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
       if (error) throw error;
       toast.success('Added to cart!');
     } catch (error) {
+      console.error('Cart error:', error);
       toast.error('Failed to add to cart');
     }
   };
@@ -143,7 +150,12 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={handleWishlistToggle} variant="outline">
+                    <Button 
+                      size="sm" 
+                      onClick={handleWishlistToggle} 
+                      variant="outline"
+                      disabled={wishlistLoading}
+                    >
                       <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
                     </Button>
                     <Button size="sm" onClick={addToCart}>
@@ -199,7 +211,12 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
               )}
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleWishlistToggle} variant="outline">
+              <Button 
+                size="sm" 
+                onClick={handleWishlistToggle} 
+                variant="outline"
+                disabled={wishlistLoading}
+              >
                 <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
               </Button>
               <Button size="sm" onClick={addToCart}>
