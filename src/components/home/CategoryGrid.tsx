@@ -10,7 +10,7 @@ const CategoryGrid = () => {
       id: 1,
       name: 'Designer Rakhi',
       description: 'Elegant & contemporary designs',
-      image: 'https://images.unsplash.com/photo-1628526498666-a5de67aa4b8e?q=80&w=500&auto=format&fit=crop',
+      image: '/Designer.png',
       color: 'from-purple-400 to-pink-400',
       icon: Crown,
       href: '/category/designer',
@@ -20,7 +20,7 @@ const CategoryGrid = () => {
       id: 2,
       name: 'Kids Rakhi',
       description: 'Fun & colorful for little ones',
-      image: 'https://images.unsplash.com/photo-1628526498666-a5de67aa4b8e?q=80&w=500&auto=format&fit=crop',
+      image: '/kids.png',
       color: 'from-blue-400 to-cyan-400',
       icon: Heart,
       href: '/category/kids',
@@ -30,7 +30,7 @@ const CategoryGrid = () => {
       id: 3,
       name: 'Premium Sets',
       description: 'Luxury rakhi with sweets & gifts',
-      image: 'https://images.unsplash.com/photo-1628526498666-a5de67aa4b8e?q=80&w=500&auto=format&fit=crop',
+      image: '/premium.png',
       color: 'from-amber-400 to-orange-400',
       icon: Star,
       href: '/category/premium',
@@ -40,7 +40,7 @@ const CategoryGrid = () => {
       id: 4,
       name: 'Traditional Rakhi',
       description: 'Classic & authentic designs',
-      image: 'https://images.unsplash.com/photo-1628526498666-a5de67aa4b8e?q=80&w=500&auto=format&fit=crop',
+      image: '/traditional.png',
       color: 'from-red-400 to-pink-400',
       icon: Sparkles,
       href: '/category/traditional',
@@ -76,7 +76,7 @@ const CategoryGrid = () => {
               <CardContent className="p-0">
                 {/* Image Container with Gradient Overlay */}
                 <div className="relative h-56 lg:h-64 overflow-hidden">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-90 group-hover:opacity-75 transition-opacity duration-300`}></div>
+                  
                   <img 
                     src={category.image} 
                     alt={category.name}

@@ -90,7 +90,7 @@ const HeroSection = () => {
                 {/* Main Image Container */}
                 <div className="relative bg-white rounded-3xl shadow-2xl p-8 transform rotate-3 hover:rotate-0 transition-transform duration-500">
                   <img 
-                    src="https://images.unsplash.com/photo-1628526498666-a5de67aa4b8e?q=80&w=800&auto=format&fit=crop" 
+                    src="/Gemini_Generated_Image_gqfwmgqfwmgqfwmg.png" 
                     alt="Beautiful Rakhi Collection" 
                     className="w-full h-96 object-cover rounded-2xl"
                   />
