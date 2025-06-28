@@ -503,13 +503,6 @@ const Checkout = () => {
                     </div>
                   </div>
                   
-                  {/* Debug Info */}
-                  <div className="text-xs text-gray-500 space-y-1">
-                    <div>Cashfree Status: {cashfreeLoaded ? '✅ Loaded' : '❌ Not Loaded'}</div>
-                    <div>App ID: {import.meta.env.VITE_CASHFREE_APP_ID ? '✅ Configured' : '❌ Missing'}</div>
-                    <div>Mode: {import.meta.env.VITE_CASHFREE_MODE || 'production'}</div>
-                  </div>
-                  
                   <Button
                     className="w-full bg-festive-red hover:bg-festive-red/90 py-3 text-lg"
                     onClick={handlePayment}
