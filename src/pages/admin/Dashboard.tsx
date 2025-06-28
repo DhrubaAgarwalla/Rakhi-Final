@@ -16,8 +16,12 @@ import {
   TrendingUp, 
   Eye,
   Edit,
-  Trash2,
-  Plus
+  RefreshCw,
+  Plus,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -30,11 +34,16 @@ const AdminDashboard = () => {
     totalUsers: 0,
     totalProducts: 0,
     totalOrders: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    pendingOrders: 0,
+    confirmedOrders: 0,
+    todayOrders: 0,
+    todayRevenue: 0
   });
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentProducts, setRecentProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [flatDeliveryCharge, setFlatDeliveryCharge] = useState<number | ''>(0);
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number | ''>(0);
 
@@ -52,26 +61,96 @@ const AdminDashboard = () => {
 
     if (isAdmin) {
       fetchDashboardData();
+      
+      // Set up real-time subscription for order updates
+      const subscription = supabase
+        .channel('admin_orders')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders'
+          },
+          (payload) => {
+            console.log('Admin: Order update received:', payload);
+            handleOrderUpdate(payload);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(subscription);
+      };
     }
   }, [user, isAdmin, adminLoading, navigate]);
 
-  const fetchDashboardData = async () => {
+  const handleOrderUpdate = (payload) => {
+    if (payload.eventType === 'UPDATE') {
+      setRecentOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === payload.new.id 
+            ? { ...order, ...payload.new }
+            : order
+        )
+      );
+      
+      // Show notification for important status changes
+      if (payload.old.status !== payload.new.status) {
+        toast.success(`Order #${payload.new.order_number} status updated to ${payload.new.status}`);
+      }
+      
+      // Refresh stats when order status changes
+      fetchStats();
+    } else if (payload.eventType === 'INSERT') {
+      // New order created
+      toast.success(`New order received: #${payload.new.order_number}`);
+      fetchDashboardData();
+    }
+  };
+
+  const fetchStats = async () => {
     try {
-      // Fetch stats
-      const [usersResult, productsResult, ordersResult] = await Promise.all([
+      // Get today's date range
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+      const [usersResult, productsResult, ordersResult, todayOrdersResult] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact' }),
         supabase.from('products').select('id', { count: 'exact' }),
-        supabase.from('orders').select('total_amount', { count: 'exact' })
+        supabase.from('orders').select('total_amount, status', { count: 'exact' }),
+        supabase.from('orders')
+          .select('total_amount, status')
+          .gte('created_at', startOfDay.toISOString())
+          .lt('created_at', endOfDay.toISOString())
       ]);
 
       const totalRevenue = ordersResult.data?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
+      const pendingOrders = ordersResult.data?.filter(order => order.status === 'pending').length || 0;
+      const confirmedOrders = ordersResult.data?.filter(order => ['confirmed', 'processing', 'shipped', 'delivered'].includes(order.status)).length || 0;
+      
+      const todayOrders = todayOrdersResult.data?.length || 0;
+      const todayRevenue = todayOrdersResult.data?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
 
       setStats({
         totalUsers: usersResult.count || 0,
         totalProducts: productsResult.count || 0,
         totalOrders: ordersResult.count || 0,
-        totalRevenue
+        totalRevenue,
+        pendingOrders,
+        confirmedOrders,
+        todayOrders,
+        todayRevenue
       });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    try {
+      await fetchStats();
 
       // Fetch recent orders
       const { data: orders } = await supabase
@@ -105,7 +184,7 @@ const AdminDashboard = () => {
         .eq('key', 'delivery_charge_settings')
         .single();
 
-      if (settingsError && settingsError.code !== 'PGRST116') { // PGRST116 means no rows found
+      if (settingsError && settingsError.code !== 'PGRST116') {
         console.error('Error fetching delivery settings:', settingsError);
       } else if (settingsData) {
         setFlatDeliveryCharge(settingsData.value.flatDeliveryCharge || 0);
@@ -118,6 +197,13 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const refreshDashboard = async () => {
+    setRefreshing(true);
+    await fetchDashboardData();
+    setRefreshing(false);
+    toast.success('Dashboard refreshed');
   };
 
   const saveDeliverySettings = async () => {
@@ -155,6 +241,19 @@ const AdminDashboard = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const getStatusIcon = (status: string) => {
+    const icons = {
+      pending: Clock,
+      confirmed: CheckCircle,
+      processing: Package,
+      shipped: Package,
+      delivered: CheckCircle,
+      cancelled: XCircle
+    };
+    const Icon = icons[status] || Clock;
+    return <Icon className="h-4 w-4" />;
+  };
+
   if (adminLoading || loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -184,6 +283,15 @@ const AdminDashboard = () => {
             Admin Dashboard
           </h1>
           <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+            <Button 
+              onClick={refreshDashboard} 
+              disabled={refreshing}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
             <Button onClick={() => navigate('/admin/products')}>
               <Package className="h-4 w-4 mr-2" />
               Manage Products
@@ -224,6 +332,10 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalOrders}</div>
+              <div className="flex gap-4 text-xs text-muted-foreground mt-1">
+                <span className="text-yellow-600">Pending: {stats.pendingOrders}</span>
+                <span className="text-green-600">Confirmed: {stats.confirmedOrders}</span>
+              </div>
             </CardContent>
           </Card>
 
@@ -234,6 +346,9 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">₹{stats.totalRevenue.toFixed(2)}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Today: ₹{stats.todayRevenue.toFixed(2)} ({stats.todayOrders} orders)
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -242,20 +357,41 @@ const AdminDashboard = () => {
           {/* Recent Orders */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Orders</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                Recent Orders
+                {stats.pendingOrders > 0 && (
+                  <Badge variant="destructive" className="flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {stats.pendingOrders} Pending
+                  </Badge>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {recentOrders.map((order) => (
                   <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
-                      <p className="font-medium">#{order.order_number}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">#{order.order_number}</p>
+                        {getStatusIcon(order.status)}
+                      </div>
                       <p className="text-sm text-gray-600">
                         {order.profiles?.first_name} {order.profiles?.last_name}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {new Date(order.created_at).toLocaleDateString()}
+                        {new Date(order.created_at).toLocaleDateString('en-IN', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </p>
+                      {order.payment_status && (
+                        <p className="text-xs text-gray-500">
+                          Payment: {order.payment_status}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="font-bold">₹{order.total_amount}</p>
@@ -290,10 +426,21 @@ const AdminDashboard = () => {
                         src={product.image_url || '/placeholder.svg'}
                         alt={product.name}
                         className="w-12 h-12 object-cover rounded"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
                       />
                       <div>
                         <p className="font-medium">{product.name}</p>
                         <p className="text-sm text-gray-600">₹{product.price}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={product.is_active ? 'default' : 'secondary'}>
+                            {product.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                          {product.is_featured && (
+                            <Badge variant="outline">Featured</Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -319,7 +466,7 @@ const AdminDashboard = () => {
               <CardTitle>Delivery Settings</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="flat-delivery-charge">Flat Delivery Charge (₹)</Label>
                   <Input
@@ -344,10 +491,10 @@ const AdminDashboard = () => {
                     placeholder="0.00"
                   />
                 </div>
-                <Button onClick={saveDeliverySettings} disabled={loading}>
-                  {loading ? 'Saving...' : 'Save Delivery Settings'}
-                </Button>
               </div>
+              <Button onClick={saveDeliverySettings} disabled={loading} className="mt-4">
+                {loading ? 'Saving...' : 'Save Delivery Settings'}
+              </Button>
             </CardContent>
           </Card>
         </div>
