@@ -18,11 +18,6 @@ declare global {
   }
 }
 
-interface CashfreeCheckoutOptions {
-  paymentSessionId: string;
-  redirectTarget: string;
-}
-
 const Checkout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -181,11 +176,12 @@ const Checkout = () => {
     try {
       const address = addresses.find(addr => addr.id === selectedAddress);
       
-      // Create Cashfree order via your backend API
-      const response = await fetch('/api/create-cashfree-order', {
+      // Create Cashfree order via Supabase Edge Function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-cashfree-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           order_id: order.order_number,
@@ -204,6 +200,8 @@ const Checkout = () => {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Cashfree order creation failed:', errorText);
         throw new Error('Failed to create Cashfree order');
       }
 
@@ -253,16 +251,20 @@ const Checkout = () => {
 
       // Initialize Cashfree
       const cashfree = window.Cashfree({
-        mode: import.meta.env.VITE_CASHFREE_MODE || 'sandbox', // 'sandbox' or 'production'
+        mode: import.meta.env.VITE_CASHFREE_MODE || 'production',
       });
 
-      const checkoutOptions: CashfreeCheckoutOptions = {
+      const checkoutOptions = {
         paymentSessionId: cashfreeOrder.payment_session_id,
-        redirectTarget: '_self', // '_self' for same tab, '_blank' for new tab
+        redirectTarget: '_self',
       };
 
-      // Handle payment success
+      console.log('Initiating Cashfree payment with options:', checkoutOptions);
+
+      // Handle payment
       cashfree.checkout(checkoutOptions).then(async (result) => {
+        console.log('Payment result:', result);
+        
         if (result.error) {
           console.error('Payment failed:', result.error);
           toast.error(`Payment failed: ${result.error.message}`);
@@ -276,9 +278,10 @@ const Checkout = () => {
           setProcessing(false);
         } else if (result.redirect) {
           console.log('Payment redirect:', result.redirect);
-          // Handle redirect if needed
+          // Payment is being processed, redirect will happen automatically
+          toast.success('Payment initiated successfully!');
         } else {
-          console.log('Payment successful:', result);
+          console.log('Payment completed:', result);
           
           // Update order with payment details
           const { error: updateError } = await supabase
@@ -290,7 +293,11 @@ const Checkout = () => {
             })
             .eq('id', order.id);
 
-          if (updateError) throw updateError;
+          if (updateError) {
+            console.error('Order update error:', updateError);
+            toast.error('Payment successful but order update failed. Please contact support.');
+            return;
+          }
 
           // Clear cart after successful payment
           const { error: clearCartError } = await supabase
@@ -298,11 +305,17 @@ const Checkout = () => {
             .delete()
             .eq('user_id', user.id);
 
-          if (clearCartError) throw clearCartError;
+          if (clearCartError) {
+            console.error('Cart clear error:', clearCartError);
+          }
 
           toast.success('Payment successful! Order placed successfully.');
           navigate('/orders');
         }
+      }).catch((error) => {
+        console.error('Cashfree checkout error:', error);
+        toast.error('Payment failed. Please try again.');
+        setProcessing(false);
       });
 
     } catch (error) {
@@ -488,6 +501,13 @@ const Checkout = () => {
                       <div>• Net Banking</div>
                       <div>• Wallets</div>
                     </div>
+                  </div>
+                  
+                  {/* Debug Info */}
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <div>Cashfree Status: {cashfreeLoaded ? '✅ Loaded' : '❌ Not Loaded'}</div>
+                    <div>App ID: {import.meta.env.VITE_CASHFREE_APP_ID ? '✅ Configured' : '❌ Missing'}</div>
+                    <div>Mode: {import.meta.env.VITE_CASHFREE_MODE || 'production'}</div>
                   </div>
                   
                   <Button

@@ -16,11 +16,22 @@ Deno.serve(async (req) => {
     // Cashfree API credentials from environment variables
     const cashfreeAppId = Deno.env.get('CASHFREE_APP_ID')
     const cashfreeSecretKey = Deno.env.get('CASHFREE_SECRET_KEY')
-    const cashfreeMode = Deno.env.get('CASHFREE_MODE') || 'sandbox' // 'sandbox' or 'production'
+    const cashfreeMode = Deno.env.get('CASHFREE_MODE') || 'production'
 
     if (!cashfreeAppId || !cashfreeSecretKey) {
+      console.error('Missing Cashfree credentials:', { 
+        hasAppId: !!cashfreeAppId, 
+        hasSecretKey: !!cashfreeSecretKey 
+      })
       throw new Error('Cashfree credentials not configured')
     }
+
+    console.log('Creating Cashfree order:', {
+      order_id,
+      order_amount,
+      mode: cashfreeMode,
+      app_id: cashfreeAppId.substring(0, 10) + '...'
+    })
 
     // Cashfree API endpoint
     const apiUrl = cashfreeMode === 'production' 
@@ -45,6 +56,8 @@ Deno.serve(async (req) => {
       order_note: 'RakhiMart Order',
     }
 
+    console.log('Sending request to Cashfree API:', apiUrl)
+
     // Make request to Cashfree API
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -57,13 +70,21 @@ Deno.serve(async (req) => {
       body: JSON.stringify(orderPayload),
     })
 
+    const responseText = await response.text()
+    console.log('Cashfree API response status:', response.status)
+    console.log('Cashfree API response:', responseText)
+
     if (!response.ok) {
-      const errorData = await response.text()
-      console.error('Cashfree API error:', errorData)
-      throw new Error(`Cashfree API error: ${response.status}`)
+      console.error('Cashfree API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: responseText
+      })
+      throw new Error(`Cashfree API error: ${response.status} - ${responseText}`)
     }
 
-    const cashfreeOrder = await response.json()
+    const cashfreeOrder = JSON.parse(responseText)
+    console.log('Cashfree order created successfully:', cashfreeOrder.cf_order_id)
 
     return new Response(JSON.stringify(cashfreeOrder), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -71,7 +92,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error creating Cashfree order:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: 'Check server logs for more information'
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
