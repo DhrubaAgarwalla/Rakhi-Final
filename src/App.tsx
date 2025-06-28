@@ -33,6 +33,7 @@ import ProductManagement from "./pages/admin/ProductManagement";
 import CreateProduct from "./pages/admin/CreateProduct";
 import EditProduct from "./pages/admin/EditProduct";
 import OrderManagement from "./pages/admin/OrderManagement";
+import ShippingManagement from "./pages/admin/ShippingManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -101,6 +102,11 @@ const App = () => (
             <Route path="/admin/orders" element={
               <AdminRoute>
                 <OrderManagement />
+              </AdminRoute>
+            } />
+            <Route path="/admin/shipping" element={
+              <AdminRoute>
+                <ShippingManagement />
               </AdminRoute>
             } />
             
