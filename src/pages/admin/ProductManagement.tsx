@@ -172,21 +172,21 @@ const ProductManagement = () => {
 
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle>All Products ({products.length})</CardTitle>
               <Button onClick={() => navigate('/admin/products/new')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add New Product
               </Button>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-md">
+            <div className="flex items-center gap-4 mt-4">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 w-full"
                 />
               </div>
             </div>
@@ -194,7 +194,7 @@ const ProductManagement = () => {
           <CardContent>
             <div className="space-y-4">
               {filteredProducts.map((product) => (
-                <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={product.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center gap-4">
                     <img
                       src={product.image_url || '/placeholder.svg'}

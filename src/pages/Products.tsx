@@ -16,6 +16,9 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const productsPerPage = 10;
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filters, setFilters] = useState({
     category: category || searchParams.get('category') || '',
@@ -61,7 +64,7 @@ const Products = () => {
             name,
             slug
           )
-        `)
+        `, { count: 'exact' })
         .eq('is_active', true);
 
       // Handle search query
@@ -105,10 +108,16 @@ const Products = () => {
         query = query.order('name', { ascending: true });
       }
 
-      const { data, error } = await query;
+      const startIndex = (currentPage - 1) * productsPerPage;
+      const endIndex = startIndex + productsPerPage - 1;
+
+      const { data, error, count } = await query
+        .range(startIndex, endIndex);
+
       if (error) throw error;
       
       setProducts(data || []);
+      setTotalProducts(count || 0);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -199,6 +208,27 @@ const Products = () => {
             )}
           </div>
         </div>
+        {totalProducts > productsPerPage && (
+          <div className="flex justify-center items-center gap-4 mt-8">
+            <Button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              variant="outline"
+            >
+              Previous
+            </Button>
+            <span className="text-gray-700">
+              Page {currentPage} of {Math.ceil(totalProducts / productsPerPage)}
+            </span>
+            <Button
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              disabled={currentPage * productsPerPage >= totalProducts}
+              variant="outline"
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </main>
       <Footer />
     </div>

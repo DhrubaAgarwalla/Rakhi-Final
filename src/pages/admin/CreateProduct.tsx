@@ -220,7 +220,7 @@ const CreateProduct = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
           <Button variant="outline" onClick={() => navigate('/admin/products')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Products
@@ -399,7 +399,7 @@ const CreateProduct = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-4">
+              <div className="flex flex-col sm:flex-row justify-center sm:justify-end gap-4">
                 <Button type="button" variant="outline" onClick={() => navigate('/admin/products')}>
                   Cancel
                 </Button>

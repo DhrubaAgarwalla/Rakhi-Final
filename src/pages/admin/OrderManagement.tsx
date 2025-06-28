@@ -140,7 +140,7 @@ const OrderManagement = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
           <Button variant="outline" onClick={() => navigate('/admin/dashboard')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
@@ -153,18 +153,18 @@ const OrderManagement = () => {
         <Card>
           <CardHeader>
             <CardTitle>All Orders</CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-md">
+            <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 w-full">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Search orders..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 w-full"
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -183,7 +183,7 @@ const OrderManagement = () => {
             <div className="space-y-4">
               {filteredOrders.map((order) => (
                 <div key={order.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4">
                     <div>
                       <h3 className="font-semibold">Order #{order.order_number}</h3>
                       <p className="text-sm text-gray-600">
@@ -193,7 +193,7 @@ const OrderManagement = () => {
                         {new Date(order.created_at).toLocaleDateString()} at {new Date(order.created_at).toLocaleTimeString()}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right mt-4 sm:mt-0">
                       <p className="font-bold text-lg">₹{order.total_amount}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <Badge className={getStatusColor(order.status)}>

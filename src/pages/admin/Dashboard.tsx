@@ -142,7 +142,7 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-playfair font-bold text-festive-red">
             Admin Dashboard
           </h1>
-          <div className="flex flex-wrap gap-2 justify-end">
+          <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
             <Button onClick={() => navigate('/admin/products')}>
               <Package className="h-4 w-4 mr-2" />
               Manage Products
