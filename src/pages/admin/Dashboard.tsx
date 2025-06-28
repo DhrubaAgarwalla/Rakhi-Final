@@ -21,7 +21,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Truck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -299,6 +300,10 @@ const AdminDashboard = () => {
             <Button onClick={() => navigate('/admin/orders')}>
               <ShoppingCart className="h-4 w-4 mr-2" />
               Manage Orders
+            </Button>
+            <Button onClick={() => navigate('/admin/shipping')}>
+              <Truck className="h-4 w-4 mr-2" />
+              Shipping Management
             </Button>
           </div>
         </div>
