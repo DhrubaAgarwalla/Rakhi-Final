@@ -139,17 +139,37 @@ const ProductDetail = () => {
 
     setAddingToCart(true);
     try {
-      const { error } = await supabase
+      // Check if item already exists in cart
+      const { data: existingItem } = await supabase
         .from('cart_items')
-        .upsert({
-          user_id: user.id,
-          product_id: product.id,
-          quantity: quantity
-        }, {
-          onConflict: 'user_id,product_id'
-        });
+        .select('quantity')
+        .eq('user_id', user.id)
+        .eq('product_id', product.id)
+        .single();
 
-      if (error) throw error;
+      if (existingItem) {
+        // Update existing item
+        const newQuantity = existingItem.quantity + quantity;
+        const { error } = await supabase
+          .from('cart_items')
+          .update({ quantity: newQuantity })
+          .eq('user_id', user.id)
+          .eq('product_id', product.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new item
+        const { error } = await supabase
+          .from('cart_items')
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+            quantity: quantity
+          });
+
+        if (error) throw error;
+      }
+
       toast.success('Added to cart!');
     } catch (error) {
       console.error('Cart error:', error);
@@ -172,8 +192,13 @@ const ProductDetail = () => {
       }
     } else {
       // Fallback to copying URL
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Product link copied to clipboard!');
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Product link copied to clipboard!');
+      } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+        toast.error('Failed to copy link');
+      }
     }
   };
 
@@ -262,6 +287,9 @@ const ProductDetail = () => {
                 alt={product.name}
                 className="w-full h-full object-cover"
                 loading="eager"
+                onError={(e) => {
+                  e.currentTarget.src = '/placeholder.svg';
+                }}
               />
             </div>
             {images.length > 1 && (
@@ -274,7 +302,14 @@ const ProductDetail = () => {
                       selectedImage === index ? 'border-festive-red' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
+                    <img 
+                      src={image} 
+                      alt={`${product.name} ${index + 1}`} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
                   </button>
                 ))}
               </div>

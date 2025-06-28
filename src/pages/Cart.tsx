@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -183,6 +182,9 @@ const Cart = () => {
                           src={item.products.image_url || '/placeholder.svg'}
                           alt={item.products.name}
                           className="w-20 h-20 object-cover rounded-lg"
+                          onError={(e) => {
+                            e.currentTarget.src = '/placeholder.svg';
+                          }}
                         />
                       </Link>
                       <div className="flex-1">
@@ -247,6 +249,11 @@ const Cart = () => {
                       <span>Shipping</span>
                       <span>{getShippingCost() === 0 ? 'Free' : `₹${getShippingCost().toFixed(2)}`}</span>
                     </div>
+                    {freeDeliveryThreshold > 0 && getTotalPrice() < freeDeliveryThreshold && (
+                      <div className="text-sm text-gray-600">
+                        Add ₹{(freeDeliveryThreshold - getTotalPrice()).toFixed(2)} more for free shipping
+                      </div>
+                    )}
                     <hr />
                     <div className="flex justify-between font-bold text-lg">
                       <span>Total</span>

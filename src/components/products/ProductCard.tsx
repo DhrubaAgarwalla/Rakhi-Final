@@ -99,17 +99,36 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
     }
 
     try {
-      const { error } = await supabase
+      // Check if item already exists in cart
+      const { data: existingItem } = await supabase
         .from('cart_items')
-        .upsert({
-          user_id: user.id,
-          product_id: product.id,
-          quantity: 1
-        }, {
-          onConflict: 'user_id,product_id'
-        });
+        .select('quantity')
+        .eq('user_id', user.id)
+        .eq('product_id', product.id)
+        .single();
 
-      if (error) throw error;
+      if (existingItem) {
+        // Update existing item
+        const { error } = await supabase
+          .from('cart_items')
+          .update({ quantity: existingItem.quantity + 1 })
+          .eq('user_id', user.id)
+          .eq('product_id', product.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new item
+        const { error } = await supabase
+          .from('cart_items')
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+            quantity: 1
+          });
+
+        if (error) throw error;
+      }
+
       toast.success('Added to cart!');
     } catch (error) {
       console.error('Cart error:', error);
@@ -138,6 +157,9 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
                 src={product.image_url || '/placeholder.svg'}
                 alt={product.name}
                 className="w-24 h-24 object-cover rounded-lg"
+                onError={(e) => {
+                  e.currentTarget.src = '/placeholder.svg';
+                }}
               />
               <div className="flex-1">
                 <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
@@ -180,6 +202,9 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
             src={product.image_url || '/placeholder.svg'}
             alt={product.name}
             className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder.svg';
+            }}
           />
           {product.original_price && product.original_price > product.price && (
             <Badge className="absolute top-2 left-2 bg-festive-red">

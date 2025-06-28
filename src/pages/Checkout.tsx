@@ -52,6 +52,8 @@ const Checkout = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(0);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
   useEffect(() => {
@@ -61,15 +63,36 @@ const Checkout = () => {
     }
     fetchCartItems();
     fetchAddresses();
+    fetchDeliverySettings();
     loadRazorpayScript();
   }, [user, navigate]);
 
   useEffect(() => {
     if (cartItems.length > 0) {
-      const total = cartItems.reduce((sum, item) => sum + (item.products.price * item.quantity), 0);
-      setTotalAmount(total);
+      const subtotal = cartItems.reduce((sum, item) => sum + (item.products.price * item.quantity), 0);
+      const shipping = subtotal >= freeDeliveryThreshold ? 0 : deliveryCharge;
+      setTotalAmount(subtotal + shipping);
     }
-  }, [cartItems]);
+  }, [cartItems, deliveryCharge, freeDeliveryThreshold]);
+
+  const fetchDeliverySettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'delivery_charge_settings')
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching delivery settings:', error);
+      } else if (data) {
+        setDeliveryCharge(data.value.flatDeliveryCharge || 0);
+        setFreeDeliveryThreshold(data.value.freeDeliveryThreshold || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching delivery settings:', error);
+    }
+  };
 
   const fetchCartItems = async () => {
     const { data } = await supabase
@@ -292,19 +315,13 @@ const Checkout = () => {
     }
   };
 
-  // Test payment function for debugging
-  const testPayment = () => {
-    console.log('Testing Razorpay integration...');
-    console.log('Razorpay loaded:', razorpayLoaded);
-    console.log('Razorpay key:', import.meta.env.VITE_RAZORPAY_KEY_ID);
-    console.log('Window.Razorpay:', window.Razorpay);
-    
-    if (!window.Razorpay) {
-      toast.error('Razorpay not loaded. Check console for errors.');
-      return;
-    }
-    
-    toast.success('Razorpay is working! You can proceed with payment.');
+  const getSubtotal = () => {
+    return cartItems.reduce((sum, item) => sum + (item.products.price * item.quantity), 0);
+  };
+
+  const getShippingCost = () => {
+    const subtotal = getSubtotal();
+    return subtotal >= freeDeliveryThreshold ? 0 : deliveryCharge;
   };
 
   if (loading) {
@@ -424,9 +441,19 @@ const Checkout = () => {
                     <span className="font-medium">₹{(item.products.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
-                <div className="flex justify-between items-center font-bold text-lg mt-4 pt-4 border-t">
-                  <span>Total:</span>
-                  <span>₹{totalAmount.toFixed(2)}</span>
+                <div className="space-y-2 mt-4 pt-4 border-t">
+                  <div className="flex justify-between items-center">
+                    <span>Subtotal:</span>
+                    <span>₹{getSubtotal().toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Shipping:</span>
+                    <span>{getShippingCost() === 0 ? 'Free' : `₹${getShippingCost().toFixed(2)}`}</span>
+                  </div>
+                  <div className="flex justify-between items-center font-bold text-lg">
+                    <span>Total:</span>
+                    <span>₹{totalAmount.toFixed(2)}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -441,31 +468,19 @@ const Checkout = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span>Subtotal:</span>
-                    <span>₹{totalAmount.toFixed(2)}</span>
+                    <span>₹{getSubtotal().toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Shipping:</span>
-                    <span className="text-green-600">Free</span>
+                    <span className={getShippingCost() === 0 ? "text-green-600" : ""}>
+                      {getShippingCost() === 0 ? 'Free' : `₹${getShippingCost().toFixed(2)}`}
+                    </span>
                   </div>
                   <hr />
                   <div className="flex justify-between items-center font-bold text-xl">
                     <span>Total:</span>
                     <span>₹{totalAmount.toFixed(2)}</span>
                   </div>
-                  
-                  {/* Debug Info */}
-                  <div className="text-xs text-gray-500 space-y-1">
-                    <div>Razorpay Status: {razorpayLoaded ? '✅ Loaded' : '❌ Not Loaded'}</div>
-                    <div>Key Configured: {import.meta.env.VITE_RAZORPAY_KEY_ID && import.meta.env.VITE_RAZORPAY_KEY_ID !== 'rzp_test_your_key_id_here' ? '✅ Yes' : '❌ No'}</div>
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    onClick={testPayment}
-                    className="w-full mb-2"
-                  >
-                    Test Razorpay Connection
-                  </Button>
                   
                   <Button
                     className="w-full bg-festive-red hover:bg-festive-red/90 py-3 text-lg"

@@ -109,6 +109,9 @@ const FeaturedProducts = () => {
                       src={product.image_url || '/placeholder.svg'} 
                       alt={product.name}
                       className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
                     />
                     
                     {/* Badges */}
@@ -125,9 +128,6 @@ const FeaturedProducts = () => {
 
                     {/* Quick Action Buttons */}
                     <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                      <Button size="sm" variant="ghost" className="bg-white/90 hover:bg-white h-10 w-10 p-0 rounded-full shadow-lg">
-                        <Heart className="h-4 w-4" />
-                      </Button>
                       <Link to={`/product/${product.slug}`}>
                         <Button size="sm" variant="ghost" className="bg-white/90 hover:bg-white h-10 w-10 p-0 rounded-full shadow-lg">
                           <Eye className="h-4 w-4" />
