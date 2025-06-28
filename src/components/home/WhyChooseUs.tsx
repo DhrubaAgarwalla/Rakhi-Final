@@ -1,6 +1,7 @@
 import React from 'react';
 import { Truck, Shield, Heart, Headphones, Gift, Star, Award, Clock, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
 
 const WhyChooseUs = () => {
   const features = [
@@ -73,7 +74,7 @@ const WhyChooseUs = () => {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <Card 
               key={index} 
@@ -128,12 +129,16 @@ const WhyChooseUs = () => {
               Join thousands of families who trust RakhiMart for their special celebrations. Start shopping today!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-white text-gray-800 px-8 py-4 rounded-full font-semibold hover:bg-gray-100 transition-colors duration-300 transform hover:scale-105">
-                Shop Now
-              </button>
-              <button className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-gray-800 transition-all duration-300 transform hover:scale-105">
-                View Collections
-              </button>
+              <Link to="/products">
+                <button className="bg-white text-gray-800 px-8 py-4 rounded-full font-semibold hover:bg-gray-100 transition-colors duration-300 transform hover:scale-105">
+                  Shop Now
+                </button>
+              </Link>
+              <Link to="/products">
+                <button className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-gray-800 transition-all duration-300 transform hover:scale-105">
+                  View Collections
+                </button>
+              </Link>
             </div>
           </div>
         </div>
