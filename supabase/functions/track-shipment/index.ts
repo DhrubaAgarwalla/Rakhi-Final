@@ -1,4 +1,4 @@
-import { DeliveryService } from '../../../src/lib/delivery.ts';
+import { DeliveryService } from '../_shared/lib/delivery.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

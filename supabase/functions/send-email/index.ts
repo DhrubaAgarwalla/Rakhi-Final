@@ -1,4 +1,4 @@
-import { EmailService } from '../../../src/lib/email.ts';
+import { EmailService } from '../_shared/lib/email.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
