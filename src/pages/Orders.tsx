@@ -6,7 +6,7 @@ import Footer from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Package, Clock, CheckCircle, XCircle, Truck } from 'lucide-react';
+import { RefreshCw, Package, Clock, CheckCircle, XCircle, Truck, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -175,6 +175,16 @@ const Orders = () => {
     return colors[paymentStatus] || 'text-gray-600';
   };
 
+  const getTrackingUrl = (trackingNumber, partner) => {
+    const trackingUrls = {
+      shiprocket: `https://shiprocket.co/tracking/${trackingNumber}`,
+      delhivery: `https://www.delhivery.com/track/package/${trackingNumber}`,
+      bluedart: `https://www.bluedart.com/tracking?trackingNumber=${trackingNumber}`,
+      dtdc: `https://www.dtdc.in/tracking?trackingNumber=${trackingNumber}`
+    };
+    return trackingUrls[partner] || trackingUrls.shiprocket;
+  };
+
   if (!user) {
     return null;
   }
@@ -297,6 +307,36 @@ const Orders = () => {
                         </div>
                       </div>
                     ))}
+                    
+                    {/* Tracking Information */}
+                    {order.tracking_number && (
+                      <div className="border-t pt-4 mt-6">
+                        <h4 className="font-medium mb-3">Tracking Information</h4>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                            <div className="flex-1">
+                              <p className="font-medium text-blue-800">Tracking Number: {order.tracking_number}</p>
+                              <p className="text-sm text-blue-600">
+                                Delivery Partner: {order.delivery_partner || 'Shiprocket'}
+                              </p>
+                              {order.estimated_delivery && (
+                                <p className="text-sm text-blue-600">
+                                  Estimated Delivery: {new Date(order.estimated_delivery).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(getTrackingUrl(order.tracking_number, order.delivery_partner), '_blank')}
+                            >
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Track Package
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Order Status Timeline */}
                     <div className="border-t pt-4 mt-6">

@@ -301,9 +301,9 @@ const AdminDashboard = () => {
               <ShoppingCart className="h-4 w-4 mr-2" />
               Manage Orders
             </Button>
-            <Button onClick={() => navigate('/admin/shipping')}>
+            <Button onClick={() => navigate('/admin/manual-shipping')}>
               <Truck className="h-4 w-4 mr-2" />
-              Shipping Management
+              Manual Shipping
             </Button>
           </div>
         </div>
