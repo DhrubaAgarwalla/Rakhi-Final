@@ -11,36 +11,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, MapPin } from 'lucide-react';
 
-// Declare Razorpay interface
+// Declare Cashfree interface
 declare global {
   interface Window {
-    Razorpay: any;
+    Cashfree: any;
   }
 }
 
-interface RazorpayOptions {
-  key: string;
-  amount: string;
-  currency: string;
-  name: string;
-  description: string;
-  image: string;
-  order_id: string;
-  handler: (response: any) => void;
-  prefill: {
-    name: string;
-    email: string;
-    contact: string;
-  };
-  notes: {
-    address: string;
-  };
-  theme: {
-    color: string;
-  };
-  modal: {
-    ondismiss: () => void;
-  };
+interface CashfreeCheckoutOptions {
+  paymentSessionId: string;
+  redirectTarget: string;
 }
 
 const Checkout = () => {
@@ -54,7 +34,7 @@ const Checkout = () => {
   const [totalAmount, setTotalAmount] = useState(0);
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(0);
-  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [cashfreeLoaded, setCashfreeLoaded] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -64,7 +44,7 @@ const Checkout = () => {
     fetchCartItems();
     fetchAddresses();
     fetchDeliverySettings();
-    loadRazorpayScript();
+    loadCashfreeScript();
   }, [user, navigate]);
 
   useEffect(() => {
@@ -128,25 +108,25 @@ const Checkout = () => {
     }
   };
 
-  const loadRazorpayScript = () => {
+  const loadCashfreeScript = () => {
     return new Promise((resolve) => {
-      // Check if Razorpay is already loaded
-      if (window.Razorpay) {
-        setRazorpayLoaded(true);
+      // Check if Cashfree is already loaded
+      if (window.Cashfree) {
+        setCashfreeLoaded(true);
         resolve(true);
         return;
       }
 
       const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
       script.onload = () => {
-        console.log('Razorpay script loaded successfully');
-        setRazorpayLoaded(true);
+        console.log('Cashfree script loaded successfully');
+        setCashfreeLoaded(true);
         resolve(true);
       };
       script.onerror = (error) => {
-        console.error('Failed to load Razorpay script:', error);
-        setRazorpayLoaded(false);
+        console.error('Failed to load Cashfree script:', error);
+        setCashfreeLoaded(false);
         resolve(false);
       };
       document.body.appendChild(script);
@@ -197,26 +177,64 @@ const Checkout = () => {
     }
   };
 
+  const createCashfreeOrder = async (order) => {
+    try {
+      const address = addresses.find(addr => addr.id === selectedAddress);
+      
+      // Create Cashfree order via your backend API
+      const response = await fetch('/api/create-cashfree-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          order_id: order.order_number,
+          order_amount: totalAmount,
+          order_currency: 'INR',
+          customer_details: {
+            customer_id: user.id,
+            customer_name: address.name,
+            customer_email: user.email || '',
+            customer_phone: address.phone,
+          },
+          order_meta: {
+            return_url: `${window.location.origin}/orders`,
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create Cashfree order');
+      }
+
+      const cashfreeOrder = await response.json();
+      return cashfreeOrder;
+    } catch (error) {
+      console.error('Error creating Cashfree order:', error);
+      throw error;
+    }
+  };
+
   const handlePayment = async () => {
     if (!selectedAddress) {
       toast.error('Please select a shipping address');
       return;
     }
 
-    if (!razorpayLoaded) {
+    if (!cashfreeLoaded) {
       toast.error('Payment system is loading. Please try again in a moment.');
-      await loadRazorpayScript();
-      if (!razorpayLoaded) {
+      await loadCashfreeScript();
+      if (!cashfreeLoaded) {
         toast.error('Unable to load payment system. Please refresh the page.');
         return;
       }
     }
 
-    // Check if Razorpay key is configured
-    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
-    if (!razorpayKey || razorpayKey === 'rzp_test_your_key_id_here') {
+    // Check if Cashfree is configured
+    const cashfreeAppId = import.meta.env.VITE_CASHFREE_APP_ID;
+    if (!cashfreeAppId) {
       toast.error('Payment system not configured. Please contact support.');
-      console.error('Razorpay key not configured properly');
+      console.error('Cashfree App ID not configured properly');
       return;
     }
 
@@ -230,84 +248,63 @@ const Checkout = () => {
         return;
       }
 
-      const address = addresses.find(addr => addr.id === selectedAddress);
+      // Create Cashfree order
+      const cashfreeOrder = await createCashfreeOrder(order);
 
-      const options: RazorpayOptions = {
-        key: razorpayKey,
-        amount: String(Math.round(totalAmount * 100)), // Amount in paisa
-        currency: 'INR',
-        name: 'RakhiMart',
-        description: `Order #${order.order_number}`,
-        image: `${window.location.origin}/favicon.ico`,
-        order_id: order.id, // Using our database order ID
-        handler: async function (response: any) {
-          try {
-            console.log('Payment successful:', response);
-            
-            // Update order with payment details
-            const { error: updateError } = await supabase
-              .from('orders')
-              .update({
-                status: 'confirmed',
-                payment_id: response.razorpay_payment_id,
-                payment_status: 'completed'
-              })
-              .eq('id', order.id);
-
-            if (updateError) throw updateError;
-
-            // Clear cart after successful payment
-            const { error: clearCartError } = await supabase
-              .from('cart_items')
-              .delete()
-              .eq('user_id', user.id);
-
-            if (clearCartError) throw clearCartError;
-
-            toast.success('Payment successful! Order placed successfully.');
-            navigate('/orders');
-          } catch (error) {
-            console.error('Order update error:', error);
-            toast.error('Payment successful but order update failed. Please contact support.');
-          }
-        },
-        prefill: {
-          name: address.name,
-          email: user.email || '',
-          contact: address.phone,
-        },
-        notes: {
-          address: `${address.address_line_1}, ${address.city}`,
-        },
-        theme: {
-          color: '#DC143C',
-        },
-        modal: {
-          ondismiss: function() {
-            console.log('Payment modal closed');
-            setProcessing(false);
-          }
-        }
-      };
-
-      console.log('Initializing Razorpay with options:', options);
-      
-      const rzp1 = new window.Razorpay(options);
-      
-      rzp1.on('payment.failed', function (response: any) {
-        console.error('Payment failed:', response.error);
-        toast.error(`Payment failed: ${response.error.description}`);
-        
-        // Update order status to failed
-        supabase
-          .from('orders')
-          .update({ status: 'cancelled', payment_status: 'failed' })
-          .eq('id', order.id);
-        
-        setProcessing(false);
+      // Initialize Cashfree
+      const cashfree = window.Cashfree({
+        mode: import.meta.env.VITE_CASHFREE_MODE || 'sandbox', // 'sandbox' or 'production'
       });
 
-      rzp1.open();
+      const checkoutOptions: CashfreeCheckoutOptions = {
+        paymentSessionId: cashfreeOrder.payment_session_id,
+        redirectTarget: '_self', // '_self' for same tab, '_blank' for new tab
+      };
+
+      // Handle payment success
+      cashfree.checkout(checkoutOptions).then(async (result) => {
+        if (result.error) {
+          console.error('Payment failed:', result.error);
+          toast.error(`Payment failed: ${result.error.message}`);
+          
+          // Update order status to failed
+          await supabase
+            .from('orders')
+            .update({ status: 'cancelled', payment_status: 'failed' })
+            .eq('id', order.id);
+          
+          setProcessing(false);
+        } else if (result.redirect) {
+          console.log('Payment redirect:', result.redirect);
+          // Handle redirect if needed
+        } else {
+          console.log('Payment successful:', result);
+          
+          // Update order with payment details
+          const { error: updateError } = await supabase
+            .from('orders')
+            .update({
+              status: 'confirmed',
+              payment_id: result.paymentDetails?.paymentId || cashfreeOrder.cf_order_id,
+              payment_status: 'completed'
+            })
+            .eq('id', order.id);
+
+          if (updateError) throw updateError;
+
+          // Clear cart after successful payment
+          const { error: clearCartError } = await supabase
+            .from('cart_items')
+            .delete()
+            .eq('user_id', user.id);
+
+          if (clearCartError) throw clearCartError;
+
+          toast.success('Payment successful! Order placed successfully.');
+          navigate('/orders');
+        }
+      });
+
     } catch (error) {
       console.error('Payment initiation error:', error);
       toast.error('Failed to initiate payment. Please try again.');
@@ -482,15 +479,26 @@ const Checkout = () => {
                     <span>₹{totalAmount.toFixed(2)}</span>
                   </div>
                   
+                  {/* Payment Methods Info */}
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Accepted Payment Methods</h4>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <div>• UPI (Google Pay, PhonePe, Paytm)</div>
+                      <div>• Credit/Debit Cards</div>
+                      <div>• Net Banking</div>
+                      <div>• Wallets</div>
+                    </div>
+                  </div>
+                  
                   <Button
                     className="w-full bg-festive-red hover:bg-festive-red/90 py-3 text-lg"
                     onClick={handlePayment}
-                    disabled={processing || totalAmount === 0 || !selectedAddress || !razorpayLoaded}
+                    disabled={processing || totalAmount === 0 || !selectedAddress || !cashfreeLoaded}
                   >
-                    {processing ? 'Processing...' : 'Pay with Razorpay'}
+                    {processing ? 'Processing...' : 'Pay with Cashfree'}
                   </Button>
                   <p className="text-xs text-gray-500 text-center">
-                    Secure payment powered by Razorpay
+                    Secure payment powered by Cashfree • UPI supported
                   </p>
                 </div>
               </CardContent>
