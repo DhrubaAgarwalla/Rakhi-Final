@@ -6,6 +6,8 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { 
   Users, 
@@ -33,6 +35,8 @@ const AdminDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentProducts, setRecentProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [flatDeliveryCharge, setFlatDeliveryCharge] = useState<number | ''>(0);
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number | ''>(0);
 
   useEffect(() => {
     if (!user) {
@@ -94,9 +98,46 @@ const AdminDashboard = () => {
 
       setRecentProducts(products || []);
 
+      // Fetch delivery settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'delivery_charge_settings')
+        .single();
+
+      if (settingsError && settingsError.code !== 'PGRST116') { // PGRST116 means no rows found
+        console.error('Error fetching delivery settings:', settingsError);
+      } else if (settingsData) {
+        setFlatDeliveryCharge(settingsData.value.flatDeliveryCharge || 0);
+        setFreeDeliveryThreshold(settingsData.value.freeDeliveryThreshold || 0);
+      }
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveDeliverySettings = async () => {
+    setLoading(true);
+    try {
+      const settings = {
+        flatDeliveryCharge: Number(flatDeliveryCharge),
+        freeDeliveryThreshold: Number(freeDeliveryThreshold),
+      };
+
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert({ key: 'delivery_charge_settings', value: settings }, { onConflict: 'key' });
+
+      if (error) throw error;
+
+      toast.success('Delivery settings updated successfully');
+    } catch (error) {
+      console.error('Error saving delivery settings:', error);
+      toast.error('Failed to save delivery settings');
     } finally {
       setLoading(false);
     }
@@ -268,6 +309,44 @@ const AdminDashboard = () => {
                 {recentProducts.length === 0 && (
                   <p className="text-gray-500 text-center py-4">No recent products</p>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Delivery Settings */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Delivery Settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="flat-delivery-charge">Flat Delivery Charge (₹)</Label>
+                  <Input
+                    id="flat-delivery-charge"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={flatDeliveryCharge}
+                    onChange={(e) => setFlatDeliveryCharge(parseFloat(e.target.value) || '')}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="free-delivery-threshold">Free Delivery Threshold (₹)</Label>
+                  <Input
+                    id="free-delivery-threshold"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={freeDeliveryThreshold}
+                    onChange={(e) => setFreeDeliveryThreshold(parseFloat(e.target.value) || '')}
+                    placeholder="0.00"
+                  />
+                </div>
+                <Button onClick={saveDeliverySettings} disabled={loading}>
+                  {loading ? 'Saving...' : 'Save Delivery Settings'}
+                </Button>
               </div>
             </CardContent>
           </Card>

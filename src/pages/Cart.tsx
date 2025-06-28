@@ -14,14 +14,36 @@ const Cart = () => {
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [flatDeliveryCharge, setFlatDeliveryCharge] = useState(0);
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(0);
 
   useEffect(() => {
     if (user) {
       fetchCartItems();
+      fetchDeliverySettings();
     } else {
       setLoading(false);
     }
   }, [user]);
+
+  const fetchDeliverySettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'delivery_charge_settings')
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+        console.error('Error fetching delivery settings:', error);
+      } else if (data) {
+        setFlatDeliveryCharge(data.value.flatDeliveryCharge || 0);
+        setFreeDeliveryThreshold(data.value.freeDeliveryThreshold || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching delivery settings:', error);
+    }
+  };
 
   const fetchCartItems = async () => {
     const { data } = await supabase
@@ -81,6 +103,19 @@ const Cart = () => {
     return cartItems.reduce((total, item) => {
       return total + (item.products.price * item.quantity);
     }, 0);
+  };
+
+  const getShippingCost = () => {
+    const subtotal = getTotalPrice();
+    if (subtotal >= freeDeliveryThreshold) {
+      return 0;
+    } else {
+      return flatDeliveryCharge;
+    }
+  };
+
+  const getCartTotal = () => {
+    return getTotalPrice() + getShippingCost();
   };
 
   if (!user) {
@@ -210,12 +245,12 @@ const Cart = () => {
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping</span>
-                      <span>Free</span>
+                      <span>{getShippingCost() === 0 ? 'Free' : `₹${getShippingCost().toFixed(2)}`}</span>
                     </div>
                     <hr />
                     <div className="flex justify-between font-bold text-lg">
                       <span>Total</span>
-                      <span>₹{getTotalPrice().toFixed(2)}</span>
+                      <span>₹{getCartTotal().toFixed(2)}</span>
                     </div>
                   </div>
 
