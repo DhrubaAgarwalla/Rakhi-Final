@@ -93,10 +93,28 @@
     @apply border-border;
   }
 
+  html {
+    /* Prevent automatic scrolling issues */
+    scroll-behavior: auto;
+    /* Ensure consistent scroll position */
+    scroll-padding-top: 0;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
     line-height: 1.6;
+    /* Prevent layout shifts */
+    overflow-x: hidden;
+    /* Ensure consistent positioning */
+    position: relative;
+  }
+
+  /* Prevent layout shifts from images */
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
   }
 
   .font-playfair {
@@ -152,9 +170,9 @@
   background: linear-gradient(135deg, #FFC700 0%, #FF7C00 50%, #CC133C 100%);
 }
 
-/* Smooth scrolling */
+/* Remove smooth scrolling that can cause issues */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto !important;
 }
 
 /* Focus styles for accessibility */
@@ -209,6 +227,10 @@ html {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  
+  html {
+    scroll-behavior: auto !important;
   }
 }
 
@@ -304,4 +326,24 @@ img[loading="lazy"].loaded {
 
 .skip-link:focus {
   @apply top-4;
+}
+
+/* Fix for layout shifts and scroll issues */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure consistent header positioning */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* Prevent content jumping */
+main {
+  flex: 1;
+  position: relative;
 }

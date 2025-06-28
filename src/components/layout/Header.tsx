@@ -14,12 +14,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [cartItemCount, setCartItemCount] = useState(0);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdmin();
@@ -68,7 +66,6 @@ const Header = () => {
     if (searchQuery.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
-      setIsSearchOpen(false);
       setIsMobileMenuOpen(false);
     }
   };
@@ -181,7 +178,7 @@ const Header = () => {
         🎉 Free Shipping on Orders Above ₹499 | Raksha Bandhan Special Collection Now Live! 🎉
       </div>
 
-      <header className="bg-white shadow-lg sticky top-0 z-50 border-b border-gray-100">
+      <header className="bg-white shadow-lg sticky top-0 z-40 border-b border-gray-100">
         <div className="container mx-auto px-4">
           {/* Desktop Header */}
           <div className="hidden lg:flex items-center justify-between h-20">
