@@ -1,27 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Star, ShoppingCart, Heart, Share2 } from 'lucide-react';
+import { Star, ShoppingCart, Heart, Share2, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 const ProductDetail = () => {
   const { slug } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   useEffect(() => {
-    fetchProduct();
+    if (slug) {
+      fetchProduct();
+    }
   }, [slug]);
 
   useEffect(() => {
@@ -31,20 +35,36 @@ const ProductDetail = () => {
   }, [user, product]);
 
   const fetchProduct = async () => {
-    const { data } = await supabase
-      .from('products')
-      .select(`
-        *,
-        categories (
-          name,
-          slug
-        )
-      `)
-      .eq('slug', slug)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          categories (
+            name,
+            slug
+          )
+        `)
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single();
 
-    setProduct(data);
-    setLoading(false);
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No rows returned
+          setProduct(null);
+        } else {
+          throw error;
+        }
+      } else {
+        setProduct(data);
+      }
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      toast.error('Failed to load product');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const checkWishlistStatus = async () => {
@@ -115,6 +135,9 @@ const ProductDetail = () => {
       return;
     }
 
+    if (addingToCart) return;
+
+    setAddingToCart(true);
     try {
       const { error } = await supabase
         .from('cart_items')
@@ -129,7 +152,28 @@ const ProductDetail = () => {
       if (error) throw error;
       toast.success('Added to cart!');
     } catch (error) {
+      console.error('Cart error:', error);
       toast.error('Failed to add to cart');
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: product.description,
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.log('Error sharing:', error);
+      }
+    } else {
+      // Fallback to copying URL
+      navigator.clipboard.writeText(window.location.href);
+      toast.success('Product link copied to clipboard!');
     }
   };
 
@@ -171,9 +215,13 @@ const ProductDetail = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 container mx-auto px-4 py-8">
-          <div className="text-center">
+          <div className="text-center py-12">
             <h1 className="text-2xl font-bold mb-4">Product not found</h1>
-            <p className="text-gray-600">The product you're looking for doesn't exist.</p>
+            <p className="text-gray-600 mb-6">The product you're looking for doesn't exist or has been removed.</p>
+            <Button onClick={() => navigate('/products')} className="bg-festive-gradient hover:opacity-90">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Products
+            </Button>
           </div>
         </main>
         <Footer />
@@ -182,29 +230,48 @@ const ProductDetail = () => {
   }
 
   const images = product.images && product.images.length > 0 ? product.images : [product.image_url || '/placeholder.svg'];
+  const maxQuantity = Math.min(10, product.stock_quantity || 0);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+          <button onClick={() => navigate('/')} className="hover:text-festive-red">Home</button>
+          <span>/</span>
+          <button onClick={() => navigate('/products')} className="hover:text-festive-red">Products</button>
+          {product.categories && (
+            <>
+              <span>/</span>
+              <button onClick={() => navigate(`/category/${product.categories.slug}`)} className="hover:text-festive-red">
+                {product.categories.name}
+              </button>
+            </>
+          )}
+          <span>/</span>
+          <span className="text-gray-900">{product.name}</span>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-8 mb-12">
           {/* Product Images */}
           <div className="space-y-4">
-            <div className="aspect-square rounded-lg overflow-hidden">
+            <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
               <img
                 src={images[selectedImage]}
                 alt={product.name}
                 className="w-full h-full object-cover"
+                loading="eager"
               />
             </div>
             {images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto">
+              <div className="flex gap-2 overflow-x-auto pb-2">
                 {images.map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
-                      selectedImage === index ? 'border-festive-red' : 'border-gray-200'
+                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                      selectedImage === index ? 'border-festive-red' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
@@ -225,7 +292,7 @@ const ProductDetail = () => {
               </h1>
               
               <div className="flex items-center mb-4">
-                <div className="flex">{renderStars(Math.floor(product.rating || 0))}</div>
+                <div className="flex">{renderStars(Math.floor(product.rating || 4))}</div>
                 <span className="ml-2 text-gray-600">
                   ({product.review_count || 0} reviews)
                 </span>
@@ -233,7 +300,7 @@ const ProductDetail = () => {
 
               <div className="flex items-center gap-4 mb-6">
                 <span className="text-3xl font-bold text-festive-red">₹{product.price}</span>
-                {product.original_price && (
+                {product.original_price && product.original_price > product.price && (
                   <>
                     <span className="text-xl text-gray-500 line-through">₹{product.original_price}</span>
                     <Badge className="bg-festive-red">
@@ -244,22 +311,34 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            <div>
-              <h3 className="font-semibold mb-2">Description</h3>
-              <p className="text-gray-600">{product.description}</p>
-            </div>
+            {product.description && (
+              <div>
+                <h3 className="font-semibold mb-2">Description</h3>
+                <p className="text-gray-600 leading-relaxed">{product.description}</p>
+              </div>
+            )}
 
             <div className="flex items-center gap-4">
               <label className="font-semibold">Quantity:</label>
-              <select
-                value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value))}
-                className="border rounded px-3 py-1"
-              >
-                {[...Array(Math.min(10, product.stock_quantity))].map((_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}</option>
-                ))}
-              </select>
+              <div className="flex items-center border rounded-lg">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="px-4 py-2 font-medium">{quantity}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
+                  disabled={quantity >= maxQuantity}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
               <span className="text-sm text-gray-500">
                 {product.stock_quantity} available
               </span>
@@ -269,10 +348,10 @@ const ProductDetail = () => {
               <Button 
                 onClick={addToCart}
                 className="flex-1 bg-festive-red hover:bg-festive-red/90"
-                disabled={product.stock_quantity === 0}
+                disabled={product.stock_quantity === 0 || addingToCart}
               >
                 <ShoppingCart className="mr-2 h-4 w-4" />
-                {product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                {addingToCart ? 'Adding...' : (product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart')}
               </Button>
               <Button 
                 variant="outline" 
@@ -282,7 +361,7 @@ const ProductDetail = () => {
               >
                 <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
               </Button>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" onClick={handleShare}>
                 <Share2 className="h-4 w-4" />
               </Button>
             </div>
@@ -294,6 +373,29 @@ const ProductDetail = () => {
                 </p>
               </div>
             )}
+
+            {/* Product Features */}
+            <div className="border-t pt-6">
+              <h3 className="font-semibold mb-4">Product Features</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Handcrafted Quality</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>Premium Materials</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span>Traditional Design</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                  <span>Gift Wrapped</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>

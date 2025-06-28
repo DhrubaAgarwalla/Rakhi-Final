@@ -20,6 +20,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [cartItemCount, setCartItemCount] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const navigate = useNavigate();
@@ -44,32 +45,42 @@ const Header = () => {
 
   const fetchCartItemCount = async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from('cart_items')
-      .select('quantity')
-      .eq('user_id', user.id);
+    try {
+      const { data, error } = await supabase
+        .from('cart_items')
+        .select('quantity')
+        .eq('user_id', user.id);
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching cart count:', error);
+        return;
+      }
+      
+      const count = data?.reduce((total, item) => total + item.quantity, 0) || 0;
+      setCartItemCount(count);
+    } catch (error) {
       console.error('Error fetching cart count:', error);
-      return;
     }
-    
-    const count = data?.reduce((total, item) => total + item.quantity, 0) || 0;
-    setCartItemCount(count);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/products?search=${searchQuery}`);
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setIsSearchOpen(false);
+      setIsMobileMenuOpen(false);
     }
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    try {
+      await signOut();
+      navigate('/');
+      setIsMobileMenuOpen(false);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const navigationItems = [
@@ -81,41 +92,84 @@ const Header = () => {
     { name: 'Traditional', href: '/category/traditional' },
   ];
 
-  const MobileProfileMenu = () => (
+  const MobileMenu = () => (
     <div className="p-4 space-y-4">
-      <h2 className="text-2xl font-bold text-center">My Account</h2>
-      <div className="space-y-2">
-        <Link to="/profile" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-          <User className="h-6 w-6 text-gray-600" />
-          <span className="text-lg font-medium">Profile</span>
-        </Link>
-        <Link to="/orders" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-          <ShoppingCart className="h-6 w-6 text-gray-600" />
-          <span className="text-lg font-medium">Orders</span>
-        </Link>
-        <Link to="/addresses" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-          <MapPin className="h-6 w-6 text-gray-600" />
-          <span className="text-lg font-medium">Addresses</span>
-        </Link>
-        <Link to="/wishlist" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-          <Heart className="h-6 w-6 text-gray-600" />
-          <span className="text-lg font-medium">Wishlist</span>
-        </Link>
-        {isAdmin && (
-          <Link to="/admin/dashboard" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-            <Shield className="h-6 w-6 text-purple-600" />
-            <span className="text-lg font-medium text-purple-600">Admin Dashboard</span>
-          </Link>
-        )}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold font-playfair text-festive-red">Menu</h2>
+        <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}>
+          <X className="h-6 w-6" />
+        </Button>
       </div>
+      
+      {/* Mobile Search */}
+      <form onSubmit={handleSearch} className="mb-6">
+        <div className="relative">
+          <Input
+            type="text"
+            placeholder="Search for Rakhi..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pr-12 pl-4 py-3 border-2 border-gray-200 focus:border-festive-red rounded-full w-full"
+          />
+          <Button 
+            type="submit" 
+            size="sm" 
+            className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-festive-gradient hover:opacity-90 rounded-full h-10 w-10 p-0"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
+      </form>
+
+      {/* Navigation Links */}
+      <div className="space-y-2">
+        {navigationItems.map((item) => (
+          <Link
+            key={item.name}
+            to={item.href}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-lg font-medium"
+          >
+            {item.name}
+          </Link>
+        ))}
+      </div>
+
+      {/* User Actions */}
       {user ? (
-        <Button onClick={handleSignOut} className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg text-lg font-medium">
-          Sign Out
-        </Button>
+        <div className="space-y-2 pt-4 border-t">
+          <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
+            <User className="h-6 w-6 text-gray-600" />
+            <span className="text-lg font-medium">Profile</span>
+          </Link>
+          <Link to="/orders" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
+            <ShoppingCart className="h-6 w-6 text-gray-600" />
+            <span className="text-lg font-medium">Orders</span>
+          </Link>
+          <Link to="/addresses" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
+            <MapPin className="h-6 w-6 text-gray-600" />
+            <span className="text-lg font-medium">Addresses</span>
+          </Link>
+          <Link to="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
+            <Heart className="h-6 w-6 text-gray-600" />
+            <span className="text-lg font-medium">Wishlist</span>
+          </Link>
+          {isAdmin && (
+            <Link to="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
+              <Shield className="h-6 w-6 text-purple-600" />
+              <span className="text-lg font-medium text-purple-600">Admin Dashboard</span>
+            </Link>
+          )}
+          <Button onClick={handleSignOut} className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg text-lg font-medium mt-4">
+            Sign Out
+          </Button>
+        </div>
       ) : (
-        <Button onClick={() => navigate('/auth')} className="w-full bg-festive-gradient hover:opacity-90 text-white py-3 rounded-lg text-lg font-medium">
-          Sign In
-        </Button>
+        <div className="pt-4 border-t">
+          <Button onClick={() => { navigate('/auth'); setIsMobileMenuOpen(false); }} className="w-full bg-festive-gradient hover:opacity-90 text-white py-3 rounded-lg text-lg font-medium">
+            Sign In
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -205,6 +259,7 @@ const Header = () => {
                     <DropdownMenuItem onClick={() => navigate('/profile')}><User className="h-4 w-4 mr-2" />Profile</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/orders')}><ShoppingCart className="h-4 w-4 mr-2" />Orders</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/addresses')}><MapPin className="h-4 w-4 mr-2" />Addresses</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/wishlist')}><Heart className="h-4 w-4 mr-2" />Wishlist</DropdownMenuItem>
                     {isAdmin && (
                       <>
                         <DropdownMenuSeparator />
@@ -235,9 +290,6 @@ const Header = () => {
             </Link>
 
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(!isSearchOpen)}>
-                <Search className="h-6 w-6" />
-              </Button>
               <Link to="/cart" className="relative">
                 <Button variant="ghost" size="icon">
                   <ShoppingCart className="h-6 w-6" />
@@ -248,42 +300,22 @@ const Header = () => {
                   )}
                 </Button>
               </Link>
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Menu className="h-6 w-6" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-full sm:w-96">
-                  <MobileProfileMenu />
-                </SheetContent>
-              </Sheet>
+              <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
+                <Menu className="h-6 w-6" />
+              </Button>
             </div>
           </div>
-
-          {/* Mobile Search Bar */}
-          {isSearchOpen && (
-            <div className="lg:hidden py-2">
-              <form onSubmit={handleSearch} className="relative">
-                <Input
-                  type="text"
-                  placeholder="Search for Rakhi..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pr-12 pl-4 py-2 border-2 border-gray-200 focus:border-festive-red rounded-full w-full"
-                />
-                <Button 
-                  type="submit" 
-                  size="sm" 
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-festive-gradient hover:opacity-90 rounded-full h-8 w-8 p-0"
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              </form>
-            </div>
-          )}
         </div>
       </header>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setIsMobileMenuOpen(false)}>
+          <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <MobileMenu />
+          </div>
+        </div>
+      )}
     </>
   );
 };

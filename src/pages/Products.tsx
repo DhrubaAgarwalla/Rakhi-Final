@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,77 +34,106 @@ const Products = () => {
   useEffect(() => {
     fetchCategories();
     fetchProducts();
-  }, [filters]);
+  }, [filters, searchParams]);
 
   const fetchCategories = async () => {
-    const { data } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name');
-    setCategories(data || []);
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
   };
 
   const fetchProducts = async () => {
     setLoading(true);
-    let query = supabase
-      .from('products')
-      .select(`
-        *,
-        categories (
-          name,
-          slug
-        )
-      `)
-      .eq('is_active', true);
+    try {
+      let query = supabase
+        .from('products')
+        .select(`
+          *,
+          categories (
+            name,
+            slug
+          )
+        `)
+        .eq('is_active', true);
 
-    if (filters.category) {
-      const { data: categoryData } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('slug', filters.category)
-        .single();
-      
-      if (categoryData) {
-        query = query.eq('category_id', categoryData.id);
+      // Handle search query
+      const searchQuery = searchParams.get('search');
+      if (searchQuery) {
+        query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
       }
-    }
 
-    if (filters.minPrice) {
-      query = query.gte('price', parseFloat(filters.minPrice));
-    }
+      // Handle category filter
+      if (filters.category) {
+        const { data: categoryData } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('slug', filters.category)
+          .single();
+        
+        if (categoryData) {
+          query = query.eq('category_id', categoryData.id);
+        }
+      }
 
-    if (filters.maxPrice) {
-      query = query.lte('price', parseFloat(filters.maxPrice));
-    }
+      // Handle price filters
+      if (filters.minPrice) {
+        query = query.gte('price', parseFloat(filters.minPrice));
+      }
 
-    // Handle sorting
-    if (filters.sortBy === 'price') {
-      query = query.order('price', { ascending: true });
-    } else if (filters.sortBy === 'price desc') {
-      query = query.order('price', { ascending: false });
-    } else if (filters.sortBy === 'rating desc') {
-      query = query.order('rating', { ascending: false });
-    } else if (filters.sortBy === 'created_at desc') {
-      query = query.order('created_at', { ascending: false });
-    } else {
-      query = query.order('name', { ascending: true });
-    }
+      if (filters.maxPrice) {
+        query = query.lte('price', parseFloat(filters.maxPrice));
+      }
 
-    const { data } = await query;
-    setProducts(data || []);
-    setLoading(false);
+      // Handle sorting
+      if (filters.sortBy === 'price') {
+        query = query.order('price', { ascending: true });
+      } else if (filters.sortBy === 'price desc') {
+        query = query.order('price', { ascending: false });
+      } else if (filters.sortBy === 'rating desc') {
+        query = query.order('rating', { ascending: false });
+      } else if (filters.sortBy === 'created_at desc') {
+        query = query.order('created_at', { ascending: false });
+      } else {
+        query = query.order('name', { ascending: true });
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const currentCategory = categories.find(c => c.slug === filters.category);
+  const searchQuery = searchParams.get('search');
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-playfair font-bold text-festive-red">
-            {currentCategory?.name || 'All Products'}
-          </h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-3xl font-playfair font-bold text-festive-red">
+              {searchQuery ? `Search Results for "${searchQuery}"` : (currentCategory?.name || 'All Products')}
+            </h1>
+            {products.length > 0 && (
+              <p className="text-gray-600 mt-2">
+                {products.length} product{products.length !== 1 ? 's' : ''} found
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant={viewMode === 'grid' ? 'default' : 'outline'}
@@ -146,7 +174,14 @@ const Products = () => {
               </div>
             ) : products.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
+                <p className="text-gray-500 text-lg mb-4">
+                  {searchQuery ? `No products found for "${searchQuery}"` : 'No products found matching your criteria.'}
+                </p>
+                {searchQuery && (
+                  <Button onClick={() => window.location.href = '/products'} className="bg-festive-gradient hover:opacity-90">
+                    View All Products
+                  </Button>
+                )}
               </div>
             ) : (
               <div className={viewMode === 'grid' 

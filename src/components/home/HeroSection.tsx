@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen lg:min-h-[80vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50">
+    <section className="relative min-h-screen lg:min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50">
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
         <div className="absolute top-10 left-10 w-20 h-20 bg-festive-gold/20 rounded-full blur-xl animate-pulse"></div>
@@ -67,11 +67,25 @@ const HeroSection = () => {
                 </Link>
               </div>
 
-              
+              {/* Trust Indicators for Desktop */}
+              <div className="hidden lg:flex items-center gap-8 text-gray-600 animate-fade-in">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">Free Shipping Above ₹499</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">10K+ Happy Customers</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">Same Day Delivery</span>
+                </div>
+              </div>
             </div>
 
             {/* Hero Image */}
-            <div className="relative animate-fade-in mt-[-4] lg:mt-0">
+            <div className="relative animate-fade-in mt-8 lg:mt-0">
               <div className="relative">
                 {/* Main Image Container */}
                 <div className="relative bg-white rounded-3xl shadow-2xl p-4 sm:p-8 lg:p-8 transform lg:rotate-3 hover:rotate-0 transition-transform duration-500">
@@ -79,7 +93,13 @@ const HeroSection = () => {
                     src="/Gemini_Generated_Image_gqfwmgqfwmgqfwmg.png" 
                     alt="Beautiful Rakhi Collection" 
                     className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-2xl"
+                    loading="eager"
                   />
+                  
+                  {/* Floating Badge */}
+                  <div className="absolute -top-4 -right-4 bg-festive-gradient text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg animate-bounce">
+                    New Arrivals!
+                  </div>
                 </div>
 
                 {/* Decorative Elements */}
@@ -87,6 +107,7 @@ const HeroSection = () => {
               </div>
             </div>
           </div>
+          
           {/* Trust Indicators for Mobile/Below Image */}
           <div className="lg:hidden flex flex-wrap justify-center items-center gap-6 text-gray-600 mt-8 animate-fade-in">
             <div className="flex items-center space-x-2">
