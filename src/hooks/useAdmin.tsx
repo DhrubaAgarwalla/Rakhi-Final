@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,16 +25,23 @@ export const useAdmin = (): AdminContextType => {
 
     try {
       // Check if user has admin role in user_roles table
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'admin')
         .single();
 
-      setIsAdmin(!!data);
+      if (error) {
+        // If there's an error (like no admin role found), default to false
+        console.log('Admin check error:', error.message);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(!!data);
+      }
     } catch (error) {
-      // If user doesn't have admin role, default to false
+      // Handle network errors or other exceptions
+      console.error('Failed to check admin status:', error);
       setIsAdmin(false);
     } finally {
       setLoading(false);
