@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Create Supabase client
+    // Create Supabase client helper
     const supabaseClient = {
       from: (table: string) => ({
         update: (data: any) => ({
@@ -35,7 +35,33 @@ Deno.serve(async (req) => {
                 'apikey': supabaseServiceKey
               },
               body: JSON.stringify(data)
-            }).then(res => res.ok ? { error: null } : { error: res.statusText })
+            }).then(async res => {
+              if (!res.ok) {
+                const errorText = await res.text()
+                console.error(`Supabase update error: ${res.status} - ${errorText}`)
+                return { error: errorText }
+              }
+              return { error: null }
+            })
+        }),
+        select: (columns: string) => ({
+          eq: (column: string, value: any) => ({
+            single: () =>
+              fetch(`${supabaseUrl}/rest/v1/${table}?${column}=eq.${value}&select=${columns}`, {
+                headers: {
+                  'Authorization': `Bearer ${supabaseServiceKey}`,
+                  'apikey': supabaseServiceKey
+                }
+              }).then(async res => {
+                if (!res.ok) {
+                  const errorText = await res.text()
+                  console.error(`Supabase select error: ${res.status} - ${errorText}`)
+                  return { data: null, error: errorText }
+                }
+                const data = await res.json()
+                return { data: data[0] || null, error: null }
+              })
+          })
         })
       })
     }
@@ -44,36 +70,51 @@ Deno.serve(async (req) => {
     const timestamp = req.headers.get('x-webhook-timestamp')
     const body = await req.text()
     
+    console.log('📥 Cashfree webhook received:', {
+      signature: signature ? 'present' : 'missing',
+      timestamp: timestamp,
+      bodyLength: body.length
+    })
+
     // Verify webhook signature (optional but recommended)
     const webhookSecret = Deno.env.get('CASHFREE_WEBHOOK_SECRET')
     if (webhookSecret && signature && timestamp) {
-      // Verify signature using HMAC SHA256
-      const encoder = new TextEncoder()
-      const key = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(webhookSecret),
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign']
-      )
-      
-      const signaturePayload = timestamp + body
-      const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(signaturePayload))
-      const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('')
+      try {
+        const encoder = new TextEncoder()
+        const key = await crypto.subtle.importKey(
+          'raw',
+          encoder.encode(webhookSecret),
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign']
+        )
+        
+        const signaturePayload = timestamp + body
+        const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(signaturePayload))
+        const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
 
-      if (signature !== expectedSignature) {
-        console.error('Invalid webhook signature')
-        return new Response('Invalid signature', { 
-          status: 400,
-          headers: corsHeaders 
-        })
+        if (signature !== expectedSignature) {
+          console.error('❌ Invalid webhook signature')
+          return new Response('Invalid signature', { 
+            status: 400,
+            headers: corsHeaders 
+          })
+        }
+        console.log('✅ Webhook signature verified')
+      } catch (error) {
+        console.error('❌ Signature verification error:', error)
       }
     }
 
     const event = JSON.parse(body)
-    console.log('Cashfree webhook event:', event.type)
+    console.log('📋 Cashfree webhook event:', {
+      type: event.type,
+      orderId: event.data?.order?.order_id,
+      paymentId: event.data?.payment?.cf_payment_id,
+      paymentStatus: event.data?.payment?.payment_status
+    })
 
     switch (event.type) {
       case 'PAYMENT_SUCCESS_WEBHOOK':
@@ -89,7 +130,7 @@ Deno.serve(async (req) => {
         break
       
       default:
-        console.log('Unhandled event type:', event.type)
+        console.log('⚠️ Unhandled event type:', event.type)
     }
 
     return new Response(JSON.stringify({ success: true }), {
@@ -97,7 +138,7 @@ Deno.serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Webhook error:', error)
+    console.error('❌ Webhook error:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -106,49 +147,87 @@ Deno.serve(async (req) => {
 })
 
 async function handlePaymentSuccess(supabaseClient: any, paymentData: any) {
-  console.log('Payment successful:', paymentData.order?.order_id)
+  const orderId = paymentData.order?.order_id
+  const paymentId = paymentData.payment?.cf_payment_id
   
-  // Update order status based on order ID
-  const { error } = await supabaseClient
-    .from('orders')
-    .update({
-      status: 'confirmed',
-      payment_status: 'completed',
-      payment_id: paymentData.payment?.cf_payment_id,
-      updated_at: new Date().toISOString()
-    })
-    .eq('order_number', paymentData.order?.order_id)
+  console.log('💰 Payment successful for order:', orderId)
+  
+  try {
+    // First, get the order details to send confirmation email
+    const { data: orderData, error: fetchError } = await supabaseClient
+      .from('orders')
+      .select('*,profiles(first_name,last_name,email),order_items(quantity,price,products(name))')
+      .eq('order_number', orderId)
+      .single()
 
-  if (error) {
-    console.error('Error updating order for payment success:', error)
+    if (fetchError) {
+      console.error('❌ Error fetching order for email:', fetchError)
+    }
+
+    // Update order status
+    const { error } = await supabaseClient
+      .from('orders')
+      .update({
+        status: 'confirmed',
+        payment_status: 'completed',
+        payment_id: paymentId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('order_number', orderId)
+
+    if (error) {
+      console.error('❌ Error updating order for payment success:', error)
+      throw error
+    }
+
+    console.log('✅ Order status updated to confirmed for:', orderId)
+
+    // Send order confirmation email if we have order data
+    if (orderData && orderData.profiles?.email) {
+      try {
+        await sendOrderConfirmationEmail(orderData)
+        console.log('📧 Order confirmation email sent for:', orderId)
+      } catch (emailError) {
+        console.error('❌ Error sending confirmation email:', emailError)
+        // Don't throw here - order update was successful
+      }
+    }
+
+  } catch (error) {
+    console.error('❌ Error in handlePaymentSuccess:', error)
     throw error
   }
 }
 
 async function handlePaymentFailed(supabaseClient: any, paymentData: any) {
-  console.log('Payment failed:', paymentData.order?.order_id)
+  const orderId = paymentData.order?.order_id
+  const paymentId = paymentData.payment?.cf_payment_id
   
-  // Update order status based on order ID
+  console.log('❌ Payment failed for order:', orderId)
+  
   const { error } = await supabaseClient
     .from('orders')
     .update({
       status: 'cancelled',
       payment_status: 'failed',
-      payment_id: paymentData.payment?.cf_payment_id,
+      payment_id: paymentId,
       updated_at: new Date().toISOString()
     })
-    .eq('order_number', paymentData.order?.order_id)
+    .eq('order_number', orderId)
 
   if (error) {
-    console.error('Error updating order for payment failed:', error)
+    console.error('❌ Error updating order for payment failed:', error)
     throw error
   }
+
+  console.log('✅ Order status updated to cancelled (payment failed) for:', orderId)
 }
 
 async function handlePaymentDropped(supabaseClient: any, paymentData: any) {
-  console.log('Payment dropped by user:', paymentData.order?.order_id)
+  const orderId = paymentData.order?.order_id
   
-  // Update order status based on order ID
+  console.log('🚫 Payment dropped by user for order:', orderId)
+  
   const { error } = await supabaseClient
     .from('orders')
     .update({
@@ -156,10 +235,51 @@ async function handlePaymentDropped(supabaseClient: any, paymentData: any) {
       payment_status: 'cancelled',
       updated_at: new Date().toISOString()
     })
-    .eq('order_number', paymentData.order?.order_id)
+    .eq('order_number', orderId)
 
   if (error) {
-    console.error('Error updating order for payment dropped:', error)
+    console.error('❌ Error updating order for payment dropped:', error)
     throw error
+  }
+
+  console.log('✅ Order status updated to cancelled (user dropped) for:', orderId)
+}
+
+async function sendOrderConfirmationEmail(orderData: any) {
+  try {
+    const emailData = {
+      type: 'order_confirmation',
+      data: {
+        orderNumber: orderData.order_number,
+        createdAt: orderData.created_at,
+        customerName: `${orderData.profiles.first_name} ${orderData.profiles.last_name}`,
+        customerEmail: orderData.profiles.email,
+        totalAmount: orderData.total_amount,
+        items: orderData.order_items.map(item => ({
+          name: item.products.name,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        shippingAddress: orderData.shipping_address
+      }
+    };
+
+    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
+      body: JSON.stringify(emailData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Email sending failed:', errorText);
+    } else {
+      console.log('✅ Order confirmation email sent successfully');
+    }
+  } catch (error) {
+    console.error('❌ Error sending order confirmation email:', error);
   }
 }

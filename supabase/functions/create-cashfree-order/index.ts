@@ -19,14 +19,14 @@ Deno.serve(async (req) => {
     const cashfreeMode = Deno.env.get('CASHFREE_MODE') || 'production'
 
     if (!cashfreeAppId || !cashfreeSecretKey) {
-      console.error('Missing Cashfree credentials:', { 
+      console.error('❌ Missing Cashfree credentials:', { 
         hasAppId: !!cashfreeAppId, 
         hasSecretKey: !!cashfreeSecretKey 
       })
       throw new Error('Cashfree credentials not configured')
     }
 
-    console.log('Creating Cashfree order:', {
+    console.log('💳 Creating Cashfree order:', {
       order_id,
       order_amount,
       mode: cashfreeMode,
@@ -53,10 +53,15 @@ Deno.serve(async (req) => {
         return_url: order_meta.return_url,
         notify_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/cashfree-webhook`,
       },
-      order_note: 'RakhiMart Order',
+      order_note: 'RakhiMart Order - Celebrating Raksha Bandhan with Love',
     }
 
-    console.log('Sending request to Cashfree API:', apiUrl)
+    console.log('📤 Sending request to Cashfree API:', {
+      url: apiUrl,
+      orderId: order_id,
+      amount: order_amount,
+      notifyUrl: orderPayload.order_meta.notify_url
+    })
 
     // Make request to Cashfree API
     const response = await fetch(apiUrl, {
@@ -71,11 +76,14 @@ Deno.serve(async (req) => {
     })
 
     const responseText = await response.text()
-    console.log('Cashfree API response status:', response.status)
-    console.log('Cashfree API response:', responseText)
+    console.log('📥 Cashfree API response:', {
+      status: response.status,
+      statusText: response.statusText,
+      bodyLength: responseText.length
+    })
 
     if (!response.ok) {
-      console.error('Cashfree API error:', {
+      console.error('❌ Cashfree API error:', {
         status: response.status,
         statusText: response.statusText,
         body: responseText
@@ -84,14 +92,17 @@ Deno.serve(async (req) => {
     }
 
     const cashfreeOrder = JSON.parse(responseText)
-    console.log('Cashfree order created successfully:', cashfreeOrder.cf_order_id)
+    console.log('✅ Cashfree order created successfully:', {
+      cfOrderId: cashfreeOrder.cf_order_id,
+      paymentSessionId: cashfreeOrder.payment_session_id ? 'present' : 'missing'
+    })
 
     return new Response(JSON.stringify(cashfreeOrder), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
   } catch (error) {
-    console.error('Error creating Cashfree order:', error)
+    console.error('❌ Error creating Cashfree order:', error)
     return new Response(JSON.stringify({ 
       error: error.message,
       details: 'Check server logs for more information'

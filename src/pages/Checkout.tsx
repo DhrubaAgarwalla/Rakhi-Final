@@ -115,12 +115,12 @@ const Checkout = () => {
       const script = document.createElement('script');
       script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
       script.onload = () => {
-        console.log('Cashfree script loaded successfully');
+        console.log('✅ Cashfree script loaded successfully');
         setCashfreeLoaded(true);
         resolve(true);
       };
       script.onerror = (error) => {
-        console.error('Failed to load Cashfree script:', error);
+        console.error('❌ Failed to load Cashfree script:', error);
         setCashfreeLoaded(false);
         resolve(false);
       };
@@ -137,6 +137,8 @@ const Checkout = () => {
     const address = addresses.find(addr => addr.id === selectedAddress);
 
     try {
+      console.log('📝 Creating order in database...');
+      
       // Create order in database with auto-generated order number
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
@@ -144,12 +146,18 @@ const Checkout = () => {
           user_id: user.id,
           total_amount: totalAmount,
           status: 'pending',
+          payment_status: 'pending',
           shipping_address: address
         })
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('❌ Order creation error:', orderError);
+        throw orderError;
+      }
+
+      console.log('✅ Order created:', orderData.order_number);
 
       // Create order items
       const orderItems = cartItems.map(item => ({
@@ -163,11 +171,15 @@ const Checkout = () => {
         .from('order_items')
         .insert(orderItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('❌ Order items creation error:', itemsError);
+        throw itemsError;
+      }
 
+      console.log('✅ Order items created');
       return orderData;
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error('❌ Error creating order:', error);
       throw error;
     }
   };
@@ -175,6 +187,8 @@ const Checkout = () => {
   const createCashfreeOrder = async (order) => {
     try {
       const address = addresses.find(addr => addr.id === selectedAddress);
+      
+      console.log('💳 Creating Cashfree order...');
       
       // Create Cashfree order via Supabase Edge Function
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-cashfree-order`, {
@@ -201,55 +215,16 @@ const Checkout = () => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Cashfree order creation failed:', errorText);
+        console.error('❌ Cashfree order creation failed:', errorText);
         throw new Error('Failed to create Cashfree order');
       }
 
       const cashfreeOrder = await response.json();
+      console.log('✅ Cashfree order created:', cashfreeOrder.cf_order_id);
       return cashfreeOrder;
     } catch (error) {
-      console.error('Error creating Cashfree order:', error);
+      console.error('❌ Error creating Cashfree order:', error);
       throw error;
-    }
-  };
-
-  const sendOrderConfirmationEmail = async (order) => {
-    try {
-      const address = addresses.find(addr => addr.id === selectedAddress);
-      
-      const emailData = {
-        type: 'order_confirmation',
-        data: {
-          orderNumber: order.order_number,
-          createdAt: order.created_at,
-          customerName: address.name,
-          customerEmail: user.email,
-          totalAmount: order.total_amount,
-          items: cartItems.map(item => ({
-            name: item.products.name,
-            quantity: item.quantity,
-            price: item.products.price
-          })),
-          shippingAddress: address
-        }
-      };
-
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify(emailData),
-      });
-
-      if (!response.ok) {
-        console.error('Email sending failed:', await response.text());
-      } else {
-        console.log('Order confirmation email sent successfully');
-      }
-    } catch (error) {
-      console.error('Error sending order confirmation email:', error);
     }
   };
 
@@ -272,13 +247,15 @@ const Checkout = () => {
     const cashfreeAppId = import.meta.env.VITE_CASHFREE_APP_ID;
     if (!cashfreeAppId) {
       toast.error('Payment system not configured. Please contact support.');
-      console.error('Cashfree App ID not configured properly');
+      console.error('❌ Cashfree App ID not configured properly');
       return;
     }
 
     setProcessing(true);
 
     try {
+      console.log('🚀 Starting payment process...');
+      
       // Create order in our database
       const order = await createOrder();
       if (!order) {
@@ -299,49 +276,40 @@ const Checkout = () => {
         redirectTarget: '_self',
       };
 
-      console.log('Initiating Cashfree payment with options:', checkoutOptions);
+      console.log('💰 Initiating Cashfree payment...');
 
       // Handle payment
       cashfree.checkout(checkoutOptions).then(async (result) => {
-        console.log('Payment result:', result);
+        console.log('📋 Payment result:', result);
         
         if (result.error) {
-          console.error('Payment failed:', result.error);
+          console.error('❌ Payment failed:', result.error);
           toast.error(`Payment failed: ${result.error.message}`);
           
           // Update order status to failed
           await supabase
             .from('orders')
-            .update({ status: 'cancelled', payment_status: 'failed' })
+            .update({ 
+              status: 'cancelled', 
+              payment_status: 'failed',
+              updated_at: new Date().toISOString()
+            })
             .eq('id', order.id);
           
           setProcessing(false);
         } else if (result.redirect) {
-          console.log('Payment redirect:', result.redirect);
+          console.log('🔄 Payment redirect:', result.redirect);
           // Payment is being processed, redirect will happen automatically
-          toast.success('Payment initiated successfully!');
+          toast.success('Payment initiated successfully! Redirecting...');
         } else {
-          console.log('Payment completed:', result);
+          console.log('✅ Payment completed:', result);
           
-          // Update order with payment details
-          const { error: updateError } = await supabase
-            .from('orders')
-            .update({
-              status: 'confirmed',
-              payment_id: result.paymentDetails?.paymentId || cashfreeOrder.cf_order_id,
-              payment_status: 'completed'
-            })
-            .eq('id', order.id);
-
-          if (updateError) {
-            console.error('Order update error:', updateError);
-            toast.error('Payment successful but order update failed. Please contact support.');
-            return;
-          }
-
-          // Send order confirmation email
-          await sendOrderConfirmationEmail(order);
-
+          // Payment completed successfully
+          // The webhook will handle the order update and email sending
+          // But we can also update locally for immediate feedback
+          
+          toast.success('Payment successful! Order confirmed. Redirecting to orders...');
+          
           // Clear cart after successful payment
           const { error: clearCartError } = await supabase
             .from('cart_items')
@@ -349,20 +317,22 @@ const Checkout = () => {
             .eq('user_id', user.id);
 
           if (clearCartError) {
-            console.error('Cart clear error:', clearCartError);
+            console.error('❌ Cart clear error:', clearCartError);
           }
 
-          toast.success('Payment successful! Order placed successfully. Check your email for confirmation.');
-          navigate('/orders');
+          // Navigate to orders page
+          setTimeout(() => {
+            navigate('/orders');
+          }, 2000);
         }
       }).catch((error) => {
-        console.error('Cashfree checkout error:', error);
+        console.error('❌ Cashfree checkout error:', error);
         toast.error('Payment failed. Please try again.');
         setProcessing(false);
       });
 
     } catch (error) {
-      console.error('Payment initiation error:', error);
+      console.error('❌ Payment initiation error:', error);
       toast.error('Failed to initiate payment. Please try again.');
       setProcessing(false);
     }
@@ -551,7 +521,7 @@ const Checkout = () => {
                     onClick={handlePayment}
                     disabled={processing || totalAmount === 0 || !selectedAddress || !cashfreeLoaded}
                   >
-                    {processing ? 'Processing...' : 'Pay with Cashfree'}
+                    {processing ? 'Processing Payment...' : 'Pay with Cashfree'}
                   </Button>
                   <p className="text-xs text-gray-500 text-center">
                     Secure payment powered by Cashfree • UPI supported
