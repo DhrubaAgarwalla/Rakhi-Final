@@ -6,7 +6,7 @@ import Footer from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Package, Clock, CheckCircle, XCircle, Truck, ExternalLink } from 'lucide-react';
+import { RefreshCw, Package, Clock, CheckCircle, XCircle, Truck, ExternalLink, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -138,6 +139,54 @@ const Orders = () => {
     await fetchOrders();
     setRefreshing(false);
     toast.success('Orders refreshed');
+  };
+
+  const resendConfirmationEmail = async (order) => {
+    if (!user || sendingEmail === order.id) return;
+
+    setSendingEmail(order.id);
+    try {
+      console.log('📧 Resending confirmation email for order:', order.order_number);
+      
+      const emailData = {
+        type: 'order_confirmation',
+        data: {
+          orderNumber: order.order_number,
+          createdAt: order.created_at,
+          customerName: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim() || 'Customer',
+          customerEmail: user.email,
+          totalAmount: order.total_amount,
+          items: order.order_items.map(item => ({
+            name: item.products.name,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          shippingAddress: order.shipping_address
+        }
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (response.ok) {
+        toast.success('Confirmation email sent successfully!');
+      } else {
+        const errorText = await response.text();
+        console.error('Email sending failed:', errorText);
+        toast.error('Failed to send email. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast.error('Failed to send email. Please try again.');
+    } finally {
+      setSendingEmail(null);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -307,6 +356,27 @@ const Orders = () => {
                         </div>
                       </div>
                     ))}
+                    
+                    {/* Email Resend Option */}
+                    {(order.status === 'confirmed' || order.status === 'processing') && (
+                      <div className="border-t pt-4 mt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium mb-1">Need confirmation email?</h4>
+                            <p className="text-sm text-gray-600">Resend your order confirmation email</p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => resendConfirmationEmail(order)}
+                            disabled={sendingEmail === order.id}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            {sendingEmail === order.id ? 'Sending...' : 'Resend Email'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Tracking Information */}
                     {order.tracking_number && (
