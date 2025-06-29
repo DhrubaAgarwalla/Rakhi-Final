@@ -90,84 +90,134 @@ const Header = () => {
   ];
 
   const MobileMenu = () => (
-    <div className="p-4 space-y-4">
-      <div className="flex justify-between items-center mb-6">
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white">
         <h2 className="text-2xl font-bold font-playfair text-festive-red">Menu</h2>
         <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}>
           <X className="h-6 w-6" />
         </Button>
       </div>
       
-      {/* Mobile Search */}
-      <form onSubmit={handleSearch} className="mb-6">
-        <div className="relative">
-          <Input
-            type="text"
-            placeholder="Search for Rakhi..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-12 pl-4 py-3 border-2 border-gray-200 focus:border-festive-red rounded-full w-full"
-          />
-          <Button 
-            type="submit" 
-            size="sm" 
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-festive-gradient hover:opacity-90 rounded-full h-10 w-10 p-0"
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-        </div>
-      </form>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 space-y-6">
+          {/* Mobile Search */}
+          <form onSubmit={handleSearch} className="mb-6">
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Search for Rakhi..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pr-12 pl-4 py-3 border-2 border-gray-200 focus:border-festive-red rounded-full w-full"
+              />
+              <Button 
+                type="submit" 
+                size="sm" 
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-festive-gradient hover:opacity-90 rounded-full h-10 w-10 p-0"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
+          </form>
 
-      {/* Navigation Links */}
-      <div className="space-y-2">
-        {navigationItems.map((item) => (
-          <Link
-            key={item.name}
-            to={item.href}
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-lg font-medium"
-          >
-            {item.name}
-          </Link>
-        ))}
+          {/* Navigation Links */}
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Shop</h3>
+            {navigationItems.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-lg font-medium border-b border-gray-100 last:border-b-0"
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+
+          {/* User Actions */}
+          {user ? (
+            <div className="space-y-2 pt-4 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">My Account</h3>
+              <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors border-b border-gray-100">
+                <User className="h-6 w-6 text-gray-600" />
+                <span className="text-lg font-medium">Profile</span>
+              </Link>
+              <Link to="/orders" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors border-b border-gray-100">
+                <ShoppingCart className="h-6 w-6 text-gray-600" />
+                <span className="text-lg font-medium">Orders</span>
+              </Link>
+              <Link to="/addresses" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors border-b border-gray-100">
+                <MapPin className="h-6 w-6 text-gray-600" />
+                <span className="text-lg font-medium">Addresses</span>
+              </Link>
+              <Link to="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors border-b border-gray-100">
+                <Heart className="h-6 w-6 text-gray-600" />
+                <span className="text-lg font-medium">Wishlist</span>
+              </Link>
+              {isAdmin && (
+                <Link to="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors border-b border-gray-100">
+                  <Shield className="h-6 w-6 text-purple-600" />
+                  <span className="text-lg font-medium text-purple-600">Admin Dashboard</span>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="pt-4 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Account</h3>
+            </div>
+          )}
+
+          {/* Customer Service Links */}
+          <div className="space-y-2 pt-4 border-t border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Help & Support</h3>
+            <Link to="/customer-service" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
+              Customer Service
+            </Link>
+            <Link to="/contact-us" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
+              Contact Us
+            </Link>
+            <Link to="/shipping-info" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
+              Shipping Info
+            </Link>
+            <Link to="/returns-exchanges" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
+              Returns & Exchanges
+            </Link>
+            <Link to="/faq" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
+              FAQ
+            </Link>
+          </div>
+
+          {/* Legal Links */}
+          <div className="space-y-2 pt-4 border-t border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Legal</h3>
+            <Link to="/privacy-policy" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
+              Privacy Policy
+            </Link>
+            <Link to="/terms-of-service" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
+              Terms of Service
+            </Link>
+            <Link to="/refund-policy" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium">
+              Refund Policy
+            </Link>
+          </div>
+        </div>
       </div>
 
-      {/* User Actions */}
-      {user ? (
-        <div className="space-y-2 pt-4 border-t">
-          <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-            <User className="h-6 w-6 text-gray-600" />
-            <span className="text-lg font-medium">Profile</span>
-          </Link>
-          <Link to="/orders" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-            <ShoppingCart className="h-6 w-6 text-gray-600" />
-            <span className="text-lg font-medium">Orders</span>
-          </Link>
-          <Link to="/addresses" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-            <MapPin className="h-6 w-6 text-gray-600" />
-            <span className="text-lg font-medium">Addresses</span>
-          </Link>
-          <Link to="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-            <Heart className="h-6 w-6 text-gray-600" />
-            <span className="text-lg font-medium">Wishlist</span>
-          </Link>
-          {isAdmin && (
-            <Link to="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-              <Shield className="h-6 w-6 text-purple-600" />
-              <span className="text-lg font-medium text-purple-600">Admin Dashboard</span>
-            </Link>
-          )}
-          <Button onClick={handleSignOut} className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg text-lg font-medium mt-4">
+      {/* Footer Actions */}
+      <div className="p-4 border-t border-gray-200 bg-gray-50">
+        {user ? (
+          <Button onClick={handleSignOut} className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg text-lg font-medium">
             Sign Out
           </Button>
-        </div>
-      ) : (
-        <div className="pt-4 border-t">
+        ) : (
           <Button onClick={() => { navigate('/auth'); setIsMobileMenuOpen(false); }} className="w-full bg-festive-gradient hover:opacity-90 text-white py-3 rounded-lg text-lg font-medium">
             Sign In
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
@@ -308,7 +358,7 @@ const Header = () => {
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setIsMobileMenuOpen(false)}>
-          <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
             <MobileMenu />
           </div>
         </div>
