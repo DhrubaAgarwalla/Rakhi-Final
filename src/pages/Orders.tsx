@@ -6,7 +6,7 @@ import Footer from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Package, Clock, CheckCircle, XCircle, Truck, ExternalLink } from 'lucide-react';
+import { RefreshCw, Package, Clock, CheckCircle, XCircle, Truck, ExternalLink, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -165,16 +165,6 @@ const Orders = () => {
     return <Icon className="h-4 w-4" />;
   };
 
-  const getPaymentStatusColor = (paymentStatus: string) => {
-    const colors = {
-      completed: 'text-green-600',
-      failed: 'text-red-600',
-      cancelled: 'text-gray-600',
-      pending: 'text-yellow-600'
-    };
-    return colors[paymentStatus] || 'text-gray-600';
-  };
-
   const getTrackingUrl = (trackingNumber, partner) => {
     const trackingUrls = {
       shiprocket: `https://shiprocket.co/tracking/${trackingNumber}`,
@@ -183,6 +173,20 @@ const Orders = () => {
       dtdc: `https://www.dtdc.in/tracking?trackingNumber=${trackingNumber}`
     };
     return trackingUrls[partner] || trackingUrls.shiprocket;
+  };
+
+  const openWhatsApp = (orderNumber) => {
+    const message = `Hi! I need help with my order #${orderNumber}. Please assist me.`;
+    const whatsappUrl = `https://wa.me/919395386870?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const canRequestReturn = (orderDate) => {
+    const deliveryDate = new Date(orderDate);
+    const currentDate = new Date();
+    const diffTime = Math.abs(currentDate - deliveryDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 3;
   };
 
   if (!user) {
@@ -208,9 +212,9 @@ const Orders = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-playfair font-bold text-festive-red">
+      <main className="flex-1 container mx-auto px-4 py-4 lg:py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
+          <h1 className="text-2xl lg:text-3xl font-playfair font-bold text-festive-red">
             My Orders
           </h1>
           <Button 
@@ -218,6 +222,7 @@ const Orders = () => {
             disabled={refreshing}
             variant="outline"
             size="sm"
+            className="w-full sm:w-auto"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
@@ -227,27 +232,27 @@ const Orders = () => {
         {orders.length === 0 ? (
           <div className="text-center py-12">
             <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">No Orders Yet</h2>
-            <p className="text-gray-500 text-lg mb-6">You haven't placed any orders yet.</p>
+            <h2 className="text-xl lg:text-2xl font-semibold mb-2">No Orders Yet</h2>
+            <p className="text-gray-500 text-base lg:text-lg mb-6">You haven't placed any orders yet.</p>
             <Button
               onClick={() => navigate('/products')}
-              className="bg-festive-red hover:bg-festive-red/90"
+              className="bg-festive-red hover:bg-festive-red/90 w-full sm:w-auto"
             >
               Start Shopping
             </Button>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 lg:space-y-6">
             {orders.map((order) => (
               <Card key={order.id} className="overflow-hidden">
-                <CardHeader className="bg-gray-50">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        Order #{order.order_number}
-                        {getStatusIcon(order.status)}
-                      </CardTitle>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+                <CardHeader className="bg-gray-50 pb-4">
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg lg:text-xl flex items-center gap-2 mb-2">
+                          Order #{order.order_number}
+                          {getStatusIcon(order.status)}
+                        </CardTitle>
                         <p className="text-sm text-gray-600">
                           Placed on {new Date(order.created_at).toLocaleDateString('en-IN', {
                             year: 'numeric',
@@ -257,71 +262,72 @@ const Orders = () => {
                             minute: '2-digit'
                           })}
                         </p>
-                        {order.payment_status && (
-                          <span className={`text-sm font-medium ${getPaymentStatusColor(order.payment_status)}`}>
-                            • Payment {order.payment_status}
-                          </span>
-                        )}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge className={`${getStatusColor(order.status)} border`}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </Badge>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">₹{order.total_amount}</p>
-                        <p className="text-sm text-gray-500">
-                          {order.order_items?.length || 0} item{(order.order_items?.length || 0) !== 1 ? 's' : ''}
-                        </p>
+                      <div className="flex flex-col sm:items-end gap-2 w-full sm:w-auto">
+                        <Badge className={`${getStatusColor(order.status)} border w-fit`}>
+                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </Badge>
+                        <div className="flex flex-col sm:text-right">
+                          <p className="font-bold text-lg lg:text-xl">₹{order.total_amount}</p>
+                          <p className="text-sm text-gray-500">
+                            {order.order_items?.length || 0} item{(order.order_items?.length || 0) !== 1 ? 's' : ''}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-6">
+                
+                <CardContent className="p-4 lg:p-6">
                   <div className="space-y-4">
-                    {order.order_items?.map((item) => (
-                      <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                        <img
-                          src={item.products?.image_url || '/placeholder.svg'}
-                          alt={item.products?.name}
-                          className="w-16 h-16 object-cover rounded-lg"
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder.svg';
-                          }}
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-medium text-lg">{item.products?.name}</h4>
-                          <div className="flex items-center gap-4 mt-1">
-                            <p className="text-sm text-gray-600">
-                              Quantity: {item.quantity}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Price: ₹{item.price}
+                    {/* Order Items */}
+                    <div className="space-y-3">
+                      {order.order_items?.map((item) => (
+                        <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                          <img
+                            src={item.products?.image_url || '/placeholder.svg'}
+                            alt={item.products?.name}
+                            className="w-12 h-12 lg:w-16 lg:h-16 object-cover rounded-lg flex-shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg';
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm lg:text-base truncate">{item.products?.name}</h4>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1">
+                              <p className="text-xs lg:text-sm text-gray-600">
+                                Qty: {item.quantity}
+                              </p>
+                              <p className="text-xs lg:text-sm text-gray-600">
+                                Price: ₹{item.price}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-medium text-sm lg:text-base">
+                              ₹{(item.quantity * item.price).toFixed(2)}
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium text-lg">
-                            ₹{(item.quantity * item.price).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                     
                     {/* Tracking Information */}
                     {order.tracking_number && (
-                      <div className="border-t pt-4 mt-6">
-                        <h4 className="font-medium mb-3">Tracking Information</h4>
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-3 text-sm lg:text-base">Tracking Information</h4>
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                          <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
                             <div className="flex-1">
-                              <p className="font-medium text-blue-800">Tracking Number: {order.tracking_number}</p>
-                              <p className="text-sm text-blue-600">
-                                Delivery Partner: {order.delivery_partner || 'Shiprocket'}
+                              <p className="font-medium text-blue-800 text-sm lg:text-base">
+                                Tracking: {order.tracking_number}
+                              </p>
+                              <p className="text-xs lg:text-sm text-blue-600">
+                                Partner: {order.delivery_partner || 'Shiprocket'}
                               </p>
                               {order.estimated_delivery && (
-                                <p className="text-sm text-blue-600">
-                                  Estimated Delivery: {new Date(order.estimated_delivery).toLocaleDateString()}
+                                <p className="text-xs lg:text-sm text-blue-600">
+                                  Est. Delivery: {new Date(order.estimated_delivery).toLocaleDateString()}
                                 </p>
                               )}
                             </div>
@@ -329,6 +335,7 @@ const Orders = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => window.open(getTrackingUrl(order.tracking_number, order.delivery_partner), '_blank')}
+                              className="w-full lg:w-auto"
                             >
                               <ExternalLink className="h-4 w-4 mr-2" />
                               Track Package
@@ -339,30 +346,72 @@ const Orders = () => {
                     )}
                     
                     {/* Order Status Timeline */}
-                    <div className="border-t pt-4 mt-6">
-                      <h4 className="font-medium mb-3">Order Status</h4>
-                      <div className="flex items-center justify-between text-sm">
-                        <div className={`flex items-center gap-2 ${order.status === 'pending' ? 'text-yellow-600' : 'text-gray-400'}`}>
-                          <Clock className="h-4 w-4" />
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium mb-3 text-sm lg:text-base">Order Status</h4>
+                      <div className="grid grid-cols-2 lg:flex lg:items-center lg:justify-between gap-2 lg:gap-4 text-xs lg:text-sm">
+                        <div className={`flex items-center gap-2 p-2 rounded ${order.status === 'pending' ? 'bg-yellow-50 text-yellow-600' : 'text-gray-400'}`}>
+                          <Clock className="h-3 w-3 lg:h-4 lg:w-4" />
                           <span>Pending</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${['confirmed', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <CheckCircle className="h-4 w-4" />
+                        <div className={`flex items-center gap-2 p-2 rounded ${['confirmed', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'bg-blue-50 text-blue-600' : 'text-gray-400'}`}>
+                          <CheckCircle className="h-3 w-3 lg:h-4 lg:w-4" />
                           <span>Confirmed</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${['processing', 'shipped', 'delivered'].includes(order.status) ? 'text-purple-600' : 'text-gray-400'}`}>
-                          <Package className="h-4 w-4" />
+                        <div className={`flex items-center gap-2 p-2 rounded ${['processing', 'shipped', 'delivered'].includes(order.status) ? 'bg-purple-50 text-purple-600' : 'text-gray-400'}`}>
+                          <Package className="h-3 w-3 lg:h-4 lg:w-4" />
                           <span>Processing</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${['shipped', 'delivered'].includes(order.status) ? 'text-orange-600' : 'text-gray-400'}`}>
-                          <Truck className="h-4 w-4" />
+                        <div className={`flex items-center gap-2 p-2 rounded ${['shipped', 'delivered'].includes(order.status) ? 'bg-orange-50 text-orange-600' : 'text-gray-400'}`}>
+                          <Truck className="h-3 w-3 lg:h-4 lg:w-4" />
                           <span>Shipped</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${order.status === 'delivered' ? 'text-green-600' : 'text-gray-400'}`}>
-                          <CheckCircle className="h-4 w-4" />
+                        <div className={`flex items-center gap-2 p-2 rounded col-span-2 lg:col-span-1 ${order.status === 'delivered' ? 'bg-green-50 text-green-600' : 'text-gray-400'}`}>
+                          <CheckCircle className="h-3 w-3 lg:h-4 lg:w-4" />
                           <span>Delivered</span>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="border-t pt-4">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          onClick={() => openWhatsApp(order.order_number)}
+                          variant="outline"
+                          className="flex-1 sm:flex-none"
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Contact Support
+                        </Button>
+                        
+                        {order.status === 'delivered' && canRequestReturn(order.created_at) && (
+                          <Button
+                            onClick={() => {
+                              const message = `Hi! I want to return/exchange items from order #${order.order_number}. Please help me with the process.`;
+                              const whatsappUrl = `https://wa.me/919395386870?text=${encodeURIComponent(message)}`;
+                              window.open(whatsappUrl, '_blank');
+                            }}
+                            variant="outline"
+                            className="flex-1 sm:flex-none bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Request Return
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {order.status === 'delivered' && (
+                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-xs lg:text-sm text-yellow-800">
+                            <strong>Return Policy:</strong> You have 3 days from delivery to request returns/exchanges via WhatsApp.
+                            {canRequestReturn(order.created_at) ? (
+                              <span className="text-green-600 font-medium"> You can still return this order!</span>
+                            ) : (
+                              <span className="text-red-600 font-medium"> Return window has expired.</span>
+                            )}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
