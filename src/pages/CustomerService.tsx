@@ -206,15 +206,15 @@ const CustomerService = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span>WhatsApp Response:</span>
-                        <span className="font-bold text-green-600">< 5 minutes</span>
+                        <span className="font-bold text-green-600">&lt; 5 minutes</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Email Response:</span>
-                        <span className="font-bold text-blue-600">< 24 hours</span>
+                        <span className="font-bold text-blue-600">&lt; 24 hours</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Issue Resolution:</span>
-                        <span className="font-bold text-purple-600">< 48 hours</span>
+                        <span className="font-bold text-purple-600">&lt; 48 hours</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Customer Satisfaction:</span>
@@ -293,7 +293,6 @@ const CustomerService = () => {
       </main>
       <Footer />
     </div>
-  )
   );
 };
 
