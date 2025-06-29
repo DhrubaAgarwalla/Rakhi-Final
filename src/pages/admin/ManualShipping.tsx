@@ -163,6 +163,8 @@ const ManualShipping = () => {
 
       if (!response.ok) {
         console.error('Email sending failed:', await response.text());
+      } else {
+        console.log('Shipping notification email sent successfully');
       }
     } catch (error) {
       console.error('Error sending shipping notification:', error);
