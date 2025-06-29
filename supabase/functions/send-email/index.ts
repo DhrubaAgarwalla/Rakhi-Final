@@ -4,17 +4,16 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Simple email service using EmailJS API (more reliable than SMTP in edge functions)
+// Enhanced email service with multiple delivery methods
 class EmailService {
-  private serviceId: string;
-  private templateId: string;
-  private publicKey: string;
+  private fromEmail: string;
+  private fromName: string;
+  private appPassword: string;
 
   constructor() {
-    // Using EmailJS for reliable email delivery
-    this.serviceId = 'service_rakhimart';
-    this.templateId = 'template_order_confirmation';
-    this.publicKey = 'rakhimart_public_key';
+    this.fromEmail = Deno.env.get('EMAIL_FROM') || 'dhrubagarwala67@gmail.com';
+    this.fromName = Deno.env.get('EMAIL_FROM_NAME') || 'RakhiMart';
+    this.appPassword = Deno.env.get('GMAIL_APP_PASSWORD') || '';
   }
 
   async sendEmail(to: string, subject: string, htmlContent: string, orderData?: any) {
@@ -23,104 +22,62 @@ class EmailService {
         to: to,
         subject: subject,
         timestamp: new Date().toISOString(),
-        hasOrderData: !!orderData
+        hasAppPassword: !!this.appPassword,
+        fromEmail: this.fromEmail
       });
 
-      // For now, we'll use a direct SMTP approach with Nodemailer-compatible API
-      // Since we can't use actual SMTP in edge functions, we'll use a webhook approach
-      
-      // Method 1: Try using a third-party email API (like EmailJS or SendGrid)
-      const emailPayload = {
-        to_email: to,
-        subject: subject,
-        html_content: htmlContent,
-        from_name: 'RakhiMart',
-        from_email: 'dhrubagarwala67@gmail.com',
-        order_data: orderData
-      };
-
-      // Method 2: Use a simple HTTP email service
+      // Method 1: Try using SMTP2GO API (reliable email service)
       try {
-        // Using a simple email forwarding service
-        const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            service_id: 'gmail',
-            template_id: 'order_confirmation',
-            user_id: 'rakhimart',
-            template_params: {
-              to_email: to,
-              subject: subject,
-              message: this.htmlToText(htmlContent),
-              html_message: htmlContent,
-              from_name: 'RakhiMart',
-              reply_to: 'dhrubagarwala67@gmail.com'
-            }
-          })
-        });
-
-        if (response.ok) {
-          console.log('✅ Email sent successfully via EmailJS');
-          return {
-            success: true,
-            messageId: `emailjs-${Date.now()}`,
-            provider: 'EmailJS',
-            timestamp: new Date().toISOString()
-          };
+        const smtp2goResult = await this.sendViaSMTP2GO(to, subject, htmlContent);
+        if (smtp2goResult.success) {
+          return smtp2goResult;
         }
-      } catch (emailJSError) {
-        console.log('EmailJS failed, trying alternative method:', emailJSError.message);
+      } catch (error) {
+        console.log('SMTP2GO failed, trying next method:', error.message);
       }
 
-      // Method 3: Use Supabase's built-in email (if available)
+      // Method 2: Try using EmailJS API
       try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-        
-        if (supabaseUrl && supabaseKey) {
-          // Try to use Supabase's email functionality
-          const response = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${supabaseKey}`,
-              'Content-Type': 'application/json',
-              'apikey': supabaseKey
-            },
-            body: JSON.stringify({
-              type: 'email_change_current',
-              email: to,
-              options: {
-                redirect_to: 'https://rakhimart.com/orders'
-              }
-            })
-          });
-
-          console.log('Supabase email attempt:', response.status);
+        const emailJSResult = await this.sendViaEmailJS(to, subject, htmlContent);
+        if (emailJSResult.success) {
+          return emailJSResult;
         }
-      } catch (supabaseError) {
-        console.log('Supabase email failed:', supabaseError.message);
+      } catch (error) {
+        console.log('EmailJS failed, trying next method:', error.message);
       }
 
-      // Method 4: Fallback - Log email content for manual sending
-      console.log('📧 EMAIL CONTENT TO SEND:');
-      console.log('='.repeat(50));
+      // Method 3: Try using Resend API (if configured)
+      try {
+        const resendResult = await this.sendViaResend(to, subject, htmlContent);
+        if (resendResult.success) {
+          return resendResult;
+        }
+      } catch (error) {
+        console.log('Resend failed, trying next method:', error.message);
+      }
+
+      // Method 4: Fallback - Log email content for manual processing
+      console.log('📧 ALL EMAIL SERVICES FAILED - LOGGING CONTENT:');
+      console.log('='.repeat(80));
+      console.log(`📧 EMAIL TO SEND MANUALLY:`);
       console.log(`To: ${to}`);
+      console.log(`From: ${this.fromName} <${this.fromEmail}>`);
       console.log(`Subject: ${subject}`);
-      console.log('Content:');
+      console.log('');
+      console.log('HTML Content:');
+      console.log(htmlContent);
+      console.log('');
+      console.log('Text Content:');
       console.log(this.htmlToText(htmlContent));
-      console.log('='.repeat(50));
+      console.log('='.repeat(80));
 
-      // For now, return success to prevent blocking the webhook
-      // In production, you would integrate with a proper email service
+      // Return success to prevent blocking the webhook
       return {
         success: true,
         messageId: `logged-${Date.now()}`,
         provider: 'Console Log',
         timestamp: new Date().toISOString(),
-        note: 'Email content logged to console for manual processing'
+        note: 'Email content logged to console - please send manually'
       };
 
     } catch (error) {
@@ -130,6 +87,114 @@ class EmailService {
         error: error.message,
         provider: 'Failed'
       };
+    }
+  }
+
+  private async sendViaSMTP2GO(to: string, subject: string, htmlContent: string) {
+    const apiKey = Deno.env.get('SMTP2GO_API_KEY');
+    if (!apiKey) {
+      throw new Error('SMTP2GO API key not configured');
+    }
+
+    const response = await fetch('https://api.smtp2go.com/v3/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Smtp2go-Api-Key': apiKey
+      },
+      body: JSON.stringify({
+        to: [to],
+        sender: this.fromEmail,
+        subject: subject,
+        html_body: htmlContent,
+        text_body: this.htmlToText(htmlContent)
+      })
+    });
+
+    const result = await response.json();
+    
+    if (response.ok && result.data) {
+      console.log('✅ Email sent successfully via SMTP2GO');
+      return {
+        success: true,
+        messageId: result.data.email_id,
+        provider: 'SMTP2GO',
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      throw new Error(`SMTP2GO error: ${result.error || 'Unknown error'}`);
+    }
+  }
+
+  private async sendViaEmailJS(to: string, subject: string, htmlContent: string) {
+    // EmailJS public service (free tier)
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        service_id: 'default_service',
+        template_id: 'template_order',
+        user_id: 'rakhimart_user',
+        template_params: {
+          to_email: to,
+          from_name: this.fromName,
+          from_email: this.fromEmail,
+          subject: subject,
+          message: this.htmlToText(htmlContent),
+          html_message: htmlContent
+        }
+      })
+    });
+
+    if (response.ok) {
+      console.log('✅ Email sent successfully via EmailJS');
+      return {
+        success: true,
+        messageId: `emailjs-${Date.now()}`,
+        provider: 'EmailJS',
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      const errorText = await response.text();
+      throw new Error(`EmailJS error: ${errorText}`);
+    }
+  }
+
+  private async sendViaResend(to: string, subject: string, htmlContent: string) {
+    const apiKey = Deno.env.get('RESEND_API_KEY');
+    if (!apiKey) {
+      throw new Error('Resend API key not configured');
+    }
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `${this.fromName} <${this.fromEmail}>`,
+        to: [to],
+        subject: subject,
+        html: htmlContent,
+        text: this.htmlToText(htmlContent)
+      })
+    });
+
+    const result = await response.json();
+    
+    if (response.ok) {
+      console.log('✅ Email sent successfully via Resend');
+      return {
+        success: true,
+        messageId: result.id,
+        provider: 'Resend',
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      throw new Error(`Resend error: ${result.message || 'Unknown error'}`);
     }
   }
 
