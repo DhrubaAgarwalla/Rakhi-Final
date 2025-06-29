@@ -293,6 +293,7 @@ const CustomerService = () => {
       </main>
       <Footer />
     </div>
+  )
   );
 };
 
