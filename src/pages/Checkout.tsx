@@ -213,6 +213,46 @@ const Checkout = () => {
     }
   };
 
+  const sendOrderConfirmationEmail = async (order) => {
+    try {
+      const address = addresses.find(addr => addr.id === selectedAddress);
+      
+      const emailData = {
+        type: 'order_confirmation',
+        data: {
+          orderNumber: order.order_number,
+          createdAt: order.created_at,
+          customerName: address.name,
+          customerEmail: user.email,
+          totalAmount: order.total_amount,
+          items: cartItems.map(item => ({
+            name: item.products.name,
+            quantity: item.quantity,
+            price: item.products.price
+          })),
+          shippingAddress: address
+        }
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (!response.ok) {
+        console.error('Email sending failed:', await response.text());
+      } else {
+        console.log('Order confirmation email sent successfully');
+      }
+    } catch (error) {
+      console.error('Error sending order confirmation email:', error);
+    }
+  };
+
   const handlePayment = async () => {
     if (!selectedAddress) {
       toast.error('Please select a shipping address');
@@ -299,6 +339,9 @@ const Checkout = () => {
             return;
           }
 
+          // Send order confirmation email
+          await sendOrderConfirmationEmail(order);
+
           // Clear cart after successful payment
           const { error: clearCartError } = await supabase
             .from('cart_items')
@@ -309,7 +352,7 @@ const Checkout = () => {
             console.error('Cart clear error:', clearCartError);
           }
 
-          toast.success('Payment successful! Order placed successfully.');
+          toast.success('Payment successful! Order placed successfully. Check your email for confirmation.');
           navigate('/orders');
         }
       }).catch((error) => {
