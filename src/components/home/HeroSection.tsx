@@ -90,7 +90,7 @@ const HeroSection = () => {
                 {/* Main Image Container */}
                 <div className="relative bg-white rounded-3xl shadow-2xl p-4 sm:p-8 lg:p-8 transform lg:rotate-3 hover:rotate-0 transition-transform duration-500">
                   <img 
-                    src="/Gemini_Generated_Image_gqfwmgqfwmgqfwmg.png" 
+                    src="https://images.pexels.com/photos/6646917/pexels-photo-6646917.jpeg?auto=compress&cs=tinysrgb&w=800" 
                     alt="Beautiful Rakhi Collection" 
                     className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-2xl"
                     loading="eager"
@@ -99,6 +99,9 @@ const HeroSection = () => {
                     style={{
                       aspectRatio: '4/3',
                       objectFit: 'cover'
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
                     }}
                   />
                   

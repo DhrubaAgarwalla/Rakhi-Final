@@ -409,7 +409,7 @@ const Checkout = () => {
         return;
       }
 
-      // Prepare customer details for Cashfree - use form data directly for guests
+      // Prepare customer details for Cashfree - use form data directly
       const customerDetails = {
         customer_id: currentUser?.id || `guest-${Date.now()}`,
         customer_name: `${formData.firstName} ${formData.lastName}`,

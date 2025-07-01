@@ -10,7 +10,7 @@ const CategoryGrid = () => {
       id: 1,
       name: 'Designer Rakhi',
       description: 'Elegant & contemporary designs',
-      image: '/Designer.png',
+      image: 'https://images.pexels.com/photos/6646918/pexels-photo-6646918.jpeg?auto=compress&cs=tinysrgb&w=800',
       color: 'from-purple-400 to-pink-400',
       icon: Crown,
       href: '/category/designer',
@@ -20,7 +20,7 @@ const CategoryGrid = () => {
       id: 2,
       name: 'Kids Rakhi',
       description: 'Fun & colorful for little ones',
-      image: '/kids.png',
+      image: 'https://images.pexels.com/photos/6646919/pexels-photo-6646919.jpeg?auto=compress&cs=tinysrgb&w=800',
       color: 'from-blue-400 to-cyan-400',
       icon: Heart,
       href: '/category/kids',
@@ -30,7 +30,7 @@ const CategoryGrid = () => {
       id: 3,
       name: 'Premium Sets',
       description: 'Luxury rakhi with sweets & gifts',
-      image: '/premium.png',
+      image: 'https://images.pexels.com/photos/6646920/pexels-photo-6646920.jpeg?auto=compress&cs=tinysrgb&w=800',
       color: 'from-amber-400 to-orange-400',
       icon: Star,
       href: '/category/premium',
@@ -40,7 +40,7 @@ const CategoryGrid = () => {
       id: 4,
       name: 'Traditional Rakhi',
       description: 'Classic & authentic designs',
-      image: '/traditional.png',
+      image: 'https://images.pexels.com/photos/6646921/pexels-photo-6646921.jpeg?auto=compress&cs=tinysrgb&w=800',
       color: 'from-red-400 to-pink-400',
       icon: Sparkles,
       href: '/category/traditional',
@@ -85,6 +85,9 @@ const CategoryGrid = () => {
                     style={{
                       aspectRatio: '1/1',
                       objectFit: 'cover'
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
                     }}
                   />
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300"></div>

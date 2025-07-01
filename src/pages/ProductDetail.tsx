@@ -130,47 +130,70 @@ const ProductDetail = () => {
   };
 
   const addToCart = async () => {
-    if (!user) {
-      toast.error('Please sign in to add items to cart');
-      return;
-    }
-
     if (addingToCart) return;
 
     setAddingToCart(true);
     try {
-      // Check if item already exists in cart
-      const { data: existingItem } = await supabase
-        .from('cart_items')
-        .select('quantity')
-        .eq('user_id', user.id)
-        .eq('product_id', product.id)
-        .single();
-
-      if (existingItem) {
-        // Update existing item
-        const newQuantity = existingItem.quantity + quantity;
-        const { error } = await supabase
+      if (user) {
+        // Logged in user - add to database
+        // Check if item already exists in cart
+        const { data: existingItem } = await supabase
           .from('cart_items')
-          .update({ quantity: newQuantity })
+          .select('quantity')
           .eq('user_id', user.id)
-          .eq('product_id', product.id);
+          .eq('product_id', product.id)
+          .single();
 
-        if (error) throw error;
+        if (existingItem) {
+          // Update existing item
+          const newQuantity = existingItem.quantity + quantity;
+          const { error } = await supabase
+            .from('cart_items')
+            .update({ quantity: newQuantity })
+            .eq('user_id', user.id)
+            .eq('product_id', product.id);
+
+          if (error) throw error;
+        } else {
+          // Insert new item
+          const { error } = await supabase
+            .from('cart_items')
+            .insert({
+              user_id: user.id,
+              product_id: product.id,
+              quantity: quantity
+            });
+
+          if (error) throw error;
+        }
+
+        toast.success('Added to cart!');
       } else {
-        // Insert new item
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-            quantity: quantity
-          });
+        // Guest user - add to localStorage
+        try {
+          const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
+          const existingItemIndex = guestCart.findIndex(item => item.productId === product.id);
 
-        if (error) throw error;
+          if (existingItemIndex > -1) {
+            guestCart[existingItemIndex].quantity += quantity;
+          } else {
+            guestCart.push({
+              productId: product.id,
+              quantity: quantity,
+              addedAt: new Date().toISOString()
+            });
+          }
+
+          localStorage.setItem('guestCart', JSON.stringify(guestCart));
+          toast.success('Added to cart!');
+          
+          // Dispatch custom event to update cart count
+          window.dispatchEvent(new CustomEvent('guestCartUpdated'));
+        } catch (error) {
+          console.error('Guest cart error:', error);
+          toast.error('Failed to add to cart');
+        }
       }
-
-      toast.success('Added to cart!');
     } catch (error) {
       console.error('Cart error:', error);
       toast.error('Failed to add to cart');
