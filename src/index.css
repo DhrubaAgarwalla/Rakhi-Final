@@ -148,6 +148,28 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Image optimization */
+  img {
+    /* Improve image loading performance */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    /* Prevent layout shift during loading */
+    width: 100%;
+    height: auto;
+  }
+
+  /* Preload critical images */
+  img[loading="eager"] {
+    /* High priority for above-the-fold images */
+    content-visibility: auto;
+  }
+
+  img[loading="lazy"] {
+    /* Optimize lazy-loaded images */
+    content-visibility: auto;
+    contain-intrinsic-size: 300px 200px;
+  }
 }
 
 /* Custom scrollbar for better UX */
@@ -346,4 +368,26 @@ header {
 main {
   flex: 1;
   position: relative;
+}
+
+/* Image optimization for better loading */
+img {
+  /* Improve loading performance */
+  will-change: auto;
+  /* Prevent layout shift */
+  aspect-ratio: attr(width) / attr(height);
+}
+
+/* Critical image preloading */
+.hero-image {
+  /* High priority loading for hero images */
+  content-visibility: auto;
+  contain-intrinsic-size: 800px 600px;
+}
+
+/* Lazy loading optimization */
+.lazy-image {
+  /* Optimize lazy-loaded images */
+  content-visibility: auto;
+  contain-intrinsic-size: 400px 300px;
 }

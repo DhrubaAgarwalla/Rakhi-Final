@@ -76,11 +76,16 @@ const CategoryGrid = () => {
               <CardContent className="p-0">
                 {/* Image Container with Gradient Overlay */}
                 <div className="relative h-56 lg:h-64 overflow-hidden">
-                  
                   <img 
                     src={category.image} 
                     alt={category.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    loading="lazy"
+                    decoding="async"
+                    style={{
+                      aspectRatio: '1/1',
+                      objectFit: 'cover'
+                    }}
                   />
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300"></div>
                   

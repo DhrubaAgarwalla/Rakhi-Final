@@ -84,7 +84,7 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Hero Image */}
+            {/* Hero Image - Optimized */}
             <div className="relative animate-fade-in mt-8 lg:mt-0">
               <div className="relative">
                 {/* Main Image Container */}
@@ -94,6 +94,12 @@ const HeroSection = () => {
                     alt="Beautiful Rakhi Collection" 
                     className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-2xl"
                     loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    style={{
+                      aspectRatio: '4/3',
+                      objectFit: 'cover'
+                    }}
                   />
                   
                   {/* Floating Badge */}

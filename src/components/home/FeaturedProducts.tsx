@@ -105,14 +105,22 @@ const FeaturedProducts = () => {
                 <CardContent className="p-0">
                   {/* Image Container */}
                   <div className="relative overflow-hidden">
-                    <img 
-                      src={product.image_url || '/placeholder.svg'} 
-                      alt={product.name}
-                      className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700"
-                      onError={(e) => {
-                        e.currentTarget.src = '/placeholder.svg';
-                      }}
-                    />
+                    <Link to={`/product/${product.slug}`}>
+                      <img 
+                        src={product.image_url || '/placeholder.svg'} 
+                        alt={product.name}
+                        className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          aspectRatio: '1/1',
+                          objectFit: 'cover'
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
+                      />
+                    </Link>
                     
                     {/* Badges */}
                     <div className="absolute top-3 left-3 flex flex-col gap-2">
@@ -155,9 +163,11 @@ const FeaturedProducts = () => {
                     <p className="text-sm text-gray-500 mb-2 font-medium">{product.categories?.name || 'Rakhi'}</p>
                     
                     {/* Product Name */}
-                    <h3 className="font-bold text-lg mb-3 group-hover:text-festive-red transition-colors duration-300 line-clamp-2">
-                      {product.name}
-                    </h3>
+                    <Link to={`/product/${product.slug}`}>
+                      <h3 className="font-bold text-lg mb-3 group-hover:text-festive-red transition-colors duration-300 line-clamp-2 cursor-pointer">
+                        {product.name}
+                      </h3>
+                    </Link>
 
                     {/* Rating */}
                     <div className="flex items-center space-x-1 mb-4">

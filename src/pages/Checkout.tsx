@@ -50,9 +50,9 @@ const Checkout = () => {
     postalCode: '',
     country: 'India',
     
-    // User type
+    // User type - Always create account for non-logged users
     isExistingUser: !!user,
-    createAccount: !user
+    createAccount: !user // Always true for guest users
   });
 
   const [errors, setErrors] = useState({});
@@ -198,10 +198,10 @@ const Checkout = () => {
       newErrors.email = 'Please enter a valid email';
     }
 
-    // Password validation for new users
-    if (!formData.isExistingUser && formData.createAccount && !formData.password) {
+    // Password validation for new users (always required for guests)
+    if (!formData.isExistingUser && !formData.password) {
       newErrors.password = 'Password is required';
-    } else if (!formData.isExistingUser && formData.createAccount && formData.password.length < 6) {
+    } else if (!formData.isExistingUser && formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
 
@@ -390,8 +390,8 @@ const Checkout = () => {
       
       let currentUser = user;
       
-      // Create account for guest users if they opted to create one
-      if (!user && formData.createAccount) {
+      // Create account for guest users (always required now)
+      if (!user) {
         try {
           currentUser = await createGuestUser();
           toast.success('Account created! You can verify your email later to access your orders.');
@@ -409,7 +409,7 @@ const Checkout = () => {
         return;
       }
 
-      // Prepare customer details for Cashfree
+      // Prepare customer details for Cashfree - use form data directly for guests
       const customerDetails = {
         customer_id: currentUser?.id || `guest-${Date.now()}`,
         customer_name: `${formData.firstName} ${formData.lastName}`,
@@ -551,18 +551,9 @@ const Checkout = () => {
                   <CardContent className="space-y-4">
                     {!user && (
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="createAccount"
-                            checked={formData.createAccount}
-                            onChange={(e) => setFormData(prev => ({ ...prev, createAccount: e.target.checked }))}
-                            className="rounded"
-                          />
-                          <Label htmlFor="createAccount" className="text-sm">
-                            Create an account to track your orders (optional)
-                          </Label>
-                        </div>
+                        <p className="text-blue-800 text-sm">
+                          <strong>Account Creation:</strong> An account will be created for you to track your orders and future purchases.
+                        </p>
                       </div>
                     )}
 
@@ -602,7 +593,7 @@ const Checkout = () => {
                       {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                     </div>
 
-                    {!user && formData.createAccount && (
+                    {!user && (
                       <div>
                         <Label htmlFor="password">Password *</Label>
                         <div className="relative">
