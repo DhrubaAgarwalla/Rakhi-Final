@@ -24,8 +24,10 @@ const Header = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    fetchCartItemCount();
+    
     if (user) {
-      fetchCartItemCount();
+      // Set up real-time listener for logged-in users
       const cartListener = supabase
         .channel('public:cart_items')
         .on(
@@ -38,24 +40,44 @@ const Header = () => {
       return () => {
         supabase.removeChannel(cartListener);
       };
+    } else {
+      // For guest users, listen to localStorage changes
+      const handleGuestCartUpdate = () => {
+        fetchCartItemCount();
+      };
+
+      window.addEventListener('guestCartUpdated', handleGuestCartUpdate);
+      window.addEventListener('storage', handleGuestCartUpdate);
+
+      return () => {
+        window.removeEventListener('guestCartUpdated', handleGuestCartUpdate);
+        window.removeEventListener('storage', handleGuestCartUpdate);
+      };
     }
   }, [user]);
 
   const fetchCartItemCount = async () => {
-    if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('cart_items')
-        .select('quantity')
-        .eq('user_id', user.id);
+      if (user) {
+        // Logged-in user - fetch from database
+        const { data, error } = await supabase
+          .from('cart_items')
+          .select('quantity')
+          .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error fetching cart count:', error);
-        return;
+        if (error) {
+          console.error('Error fetching cart count:', error);
+          return;
+        }
+        
+        const count = data?.reduce((total, item) => total + item.quantity, 0) || 0;
+        setCartItemCount(count);
+      } else {
+        // Guest user - get from localStorage
+        const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
+        const count = guestCart.reduce((total, item) => total + item.quantity, 0);
+        setCartItemCount(count);
       }
-      
-      const count = data?.reduce((total, item) => total + item.quantity, 0) || 0;
-      setCartItemCount(count);
     } catch (error) {
       console.error('Error fetching cart count:', error);
     }

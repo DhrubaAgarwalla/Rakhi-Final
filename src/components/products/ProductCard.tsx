@@ -93,46 +93,69 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!user) {
-      toast.error('Please sign in to add items to cart');
-      return;
-    }
-
-    try {
-      // Check if item already exists in cart
-      const { data: existingItem } = await supabase
-        .from('cart_items')
-        .select('quantity')
-        .eq('user_id', user.id)
-        .eq('product_id', product.id)
-        .single();
-
-      if (existingItem) {
-        // Update existing item
-        const { error } = await supabase
+    if (user) {
+      // Logged in user - add to database
+      try {
+        // Check if item already exists in cart
+        const { data: existingItem } = await supabase
           .from('cart_items')
-          .update({ quantity: existingItem.quantity + 1 })
+          .select('quantity')
           .eq('user_id', user.id)
-          .eq('product_id', product.id);
+          .eq('product_id', product.id)
+          .single();
 
-        if (error) throw error;
-      } else {
-        // Insert new item
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-            quantity: 1
-          });
+        if (existingItem) {
+          // Update existing item
+          const { error } = await supabase
+            .from('cart_items')
+            .update({ quantity: existingItem.quantity + 1 })
+            .eq('user_id', user.id)
+            .eq('product_id', product.id);
 
-        if (error) throw error;
+          if (error) throw error;
+        } else {
+          // Insert new item
+          const { error } = await supabase
+            .from('cart_items')
+            .insert({
+              user_id: user.id,
+              product_id: product.id,
+              quantity: 1
+            });
+
+          if (error) throw error;
+        }
+
+        toast.success('Added to cart!');
+      } catch (error) {
+        console.error('Cart error:', error);
+        toast.error('Failed to add to cart');
       }
+    } else {
+      // Guest user - add to localStorage
+      try {
+        const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
+        const existingItemIndex = guestCart.findIndex(item => item.productId === product.id);
 
-      toast.success('Added to cart!');
-    } catch (error) {
-      console.error('Cart error:', error);
-      toast.error('Failed to add to cart');
+        if (existingItemIndex > -1) {
+          guestCart[existingItemIndex].quantity += 1;
+        } else {
+          guestCart.push({
+            productId: product.id,
+            quantity: 1,
+            addedAt: new Date().toISOString()
+          });
+        }
+
+        localStorage.setItem('guestCart', JSON.stringify(guestCart));
+        toast.success('Added to cart!');
+        
+        // Dispatch custom event to update cart count
+        window.dispatchEvent(new CustomEvent('guestCartUpdated'));
+      } catch (error) {
+        console.error('Guest cart error:', error);
+        toast.error('Failed to add to cart');
+      }
     }
   };
 

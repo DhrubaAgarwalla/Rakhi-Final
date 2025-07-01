@@ -17,12 +17,8 @@ const Cart = () => {
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(0);
 
   useEffect(() => {
-    if (user) {
-      fetchCartItems();
-      fetchDeliverySettings();
-    } else {
-      setLoading(false);
-    }
+    fetchCartItems();
+    fetchDeliverySettings();
   }, [user]);
 
   const fetchDeliverySettings = async () => {
@@ -33,7 +29,7 @@ const Cart = () => {
         .eq('key', 'delivery_charge_settings')
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching delivery settings:', error);
       } else if (data) {
         setFlatDeliveryCharge(data.value.flatDeliveryCharge || 0);
@@ -45,22 +41,47 @@ const Cart = () => {
   };
 
   const fetchCartItems = async () => {
-    const { data } = await supabase
-      .from('cart_items')
-      .select(`
-        *,
-        products (
-          id,
-          name,
-          price,
-          image_url,
-          slug,
-          stock_quantity
-        )
-      `)
-      .eq('user_id', user.id);
+    if (user) {
+      // Logged-in user - fetch from database
+      const { data } = await supabase
+        .from('cart_items')
+        .select(`
+          *,
+          products (
+            id,
+            name,
+            price,
+            image_url,
+            slug,
+            stock_quantity
+          )
+        `)
+        .eq('user_id', user.id);
 
-    setCartItems(data || []);
+      setCartItems(data || []);
+    } else {
+      // Guest user - get from localStorage
+      const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
+      if (guestCart.length > 0) {
+        // Fetch product details for guest cart items
+        const productIds = guestCart.map(item => item.productId);
+        const { data: products } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', productIds);
+
+        const cartWithProducts = guestCart.map(item => {
+          const product = products?.find(p => p.id === item.productId);
+          return {
+            id: `guest-${item.productId}`,
+            quantity: item.quantity,
+            products: product
+          };
+        }).filter(item => item.products);
+
+        setCartItems(cartWithProducts);
+      }
+    }
     setLoading(false);
   };
 
@@ -70,31 +91,67 @@ const Cart = () => {
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from('cart_items')
-        .update({ quantity: newQuantity })
-        .eq('id', itemId);
+    if (user) {
+      // Logged-in user - update database
+      try {
+        const { error } = await supabase
+          .from('cart_items')
+          .update({ quantity: newQuantity })
+          .eq('id', itemId);
 
-      if (error) throw error;
-      fetchCartItems();
-    } catch (error) {
-      toast.error('Failed to update quantity');
+        if (error) throw error;
+        fetchCartItems();
+      } catch (error) {
+        toast.error('Failed to update quantity');
+      }
+    } else {
+      // Guest user - update localStorage
+      try {
+        const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
+        const productId = itemId.replace('guest-', '');
+        const itemIndex = guestCart.findIndex(item => item.productId === productId);
+        
+        if (itemIndex > -1) {
+          guestCart[itemIndex].quantity = newQuantity;
+          localStorage.setItem('guestCart', JSON.stringify(guestCart));
+          fetchCartItems();
+          window.dispatchEvent(new CustomEvent('guestCartUpdated'));
+        }
+      } catch (error) {
+        toast.error('Failed to update quantity');
+      }
     }
   };
 
   const removeItem = async (itemId: string) => {
-    try {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('id', itemId);
+    if (user) {
+      // Logged-in user - remove from database
+      try {
+        const { error } = await supabase
+          .from('cart_items')
+          .delete()
+          .eq('id', itemId);
 
-      if (error) throw error;
-      fetchCartItems();
-      toast.success('Item removed from cart');
-    } catch (error) {
-      toast.error('Failed to remove item');
+        if (error) throw error;
+        fetchCartItems();
+        toast.success('Item removed from cart');
+      } catch (error) {
+        toast.error('Failed to remove item');
+      }
+    } else {
+      // Guest user - remove from localStorage
+      try {
+        const guestCart = JSON.parse(localStorage.getItem('guestCart') || '[]');
+        const productId = itemId.replace('guest-', '');
+        const updatedCart = guestCart.filter(item => item.productId !== productId);
+        
+        localStorage.setItem('guestCart', JSON.stringify(updatedCart));
+        fetchCartItems();
+        window.dispatchEvent(new CustomEvent('guestCartUpdated'));
+        toast.success('Item removed from cart');
+      } catch (error) {
+        toast.error('Failed to remove item');
+      }
     }
   };
 
@@ -116,26 +173,6 @@ const Cart = () => {
   const getCartTotal = () => {
     return getTotalPrice() + getShippingCost();
   };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Please Sign In</h1>
-            <p className="text-gray-600 mb-6">You need to sign in to view your cart.</p>
-            <Link to="/auth">
-              <Button className="bg-festive-red hover:bg-festive-red/90">
-                Sign In
-              </Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   if (loading) {
     return (
