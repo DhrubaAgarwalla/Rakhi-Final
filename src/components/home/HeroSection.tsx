@@ -84,22 +84,16 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Hero Image - Optimized */}
+            {/* Hero Image - Back to Original */}
             <div className="relative animate-fade-in mt-8 lg:mt-0">
               <div className="relative">
                 {/* Main Image Container */}
                 <div className="relative bg-white rounded-3xl shadow-2xl p-4 sm:p-8 lg:p-8 transform lg:rotate-3 hover:rotate-0 transition-transform duration-500">
                   <img 
-                    src="https://images.pexels.com/photos/6646917/pexels-photo-6646917.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                    src="/Gemini_Generated_Image_gqfwmgqfwmgqfwmg.png" 
                     alt="Beautiful Rakhi Collection" 
                     className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-2xl"
                     loading="eager"
-                    fetchPriority="high"
-                    decoding="async"
-                    style={{
-                      aspectRatio: '4/3',
-                      objectFit: 'cover'
-                    }}
                     onError={(e) => {
                       e.currentTarget.src = '/placeholder.svg';
                     }}

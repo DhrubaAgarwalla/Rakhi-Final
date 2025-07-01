@@ -103,19 +103,14 @@ const FeaturedProducts = () => {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <CardContent className="p-0">
-                  {/* Image Container */}
+                  {/* Image Container - Fixed Navigation */}
                   <div className="relative overflow-hidden">
-                    <Link to={`/product/${product.slug}`}>
+                    <Link to={`/product/${product.slug}`} className="block">
                       <img 
                         src={product.image_url || '/placeholder.svg'} 
                         alt={product.name}
                         className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700"
                         loading="lazy"
-                        decoding="async"
-                        style={{
-                          aspectRatio: '1/1',
-                          objectFit: 'cover'
-                        }}
                         onError={(e) => {
                           e.currentTarget.src = '/placeholder.svg';
                         }}
@@ -162,8 +157,8 @@ const FeaturedProducts = () => {
                     {/* Category */}
                     <p className="text-sm text-gray-500 mb-2 font-medium">{product.categories?.name || 'Rakhi'}</p>
                     
-                    {/* Product Name */}
-                    <Link to={`/product/${product.slug}`}>
+                    {/* Product Name - Fixed Navigation */}
+                    <Link to={`/product/${product.slug}`} className="block">
                       <h3 className="font-bold text-lg mb-3 group-hover:text-festive-red transition-colors duration-300 line-clamp-2 cursor-pointer">
                         {product.name}
                       </h3>
