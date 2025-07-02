@@ -84,7 +84,7 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Hero Image - Back to Original */}
+            {/* Hero Image */}
             <div className="relative animate-fade-in mt-8 lg:mt-0">
               <div className="relative">
                 {/* Main Image Container */}
@@ -95,6 +95,7 @@ const HeroSection = () => {
                     className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-2xl"
                     loading="eager"
                     onError={(e) => {
+                      console.error('Failed to load hero image:', e.currentTarget.src);
                       e.currentTarget.src = '/placeholder.svg';
                     }}
                   />
