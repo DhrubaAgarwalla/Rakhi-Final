@@ -266,7 +266,7 @@ const Checkout = () => {
 
   const createOrder = async (userId) => {
     try {
-      console.log('📝 Creating order in database...');
+      console.log('📝 Creating order via Edge Function...');
       
       const shippingAddress = {
         name: formData.name,
@@ -279,44 +279,41 @@ const Checkout = () => {
         country: formData.country
       };
 
-      // Create order in database with auto-generated order number
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: userId,
-          total_amount: totalAmount,
-          status: 'pending',
-          payment_status: 'pending',
-          shipping_address: shippingAddress
-        })
-        .select()
-        .single();
-
-      if (orderError) {
-        console.error('❌ Order creation error:', orderError);
-        throw orderError;
-      }
-
-      console.log('✅ Order created:', orderData.order_number);
-
-      // Create order items
       const orderItems = cartItems.map(item => ({
-        order_id: orderData.id,
         product_id: item.products.id,
         quantity: item.quantity,
         price: item.products.price
       }));
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
+      // Create order via Edge Function to handle both guest and authenticated users
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          total_amount: totalAmount,
+          shipping_address: shippingAddress,
+          order_items: orderItems,
+          customer_details: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            email: formData.email,
+            phone: formData.phone
+          }
+        }),
+      });
 
-      if (itemsError) {
-        console.error('❌ Order items creation error:', itemsError);
-        throw itemsError;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Order creation failed:', errorText);
+        throw new Error('Failed to create order');
       }
 
-      console.log('✅ Order items created');
+      const orderData = await response.json();
+      console.log('✅ Order created:', orderData.order_number);
       return orderData;
     } catch (error) {
       console.error('❌ Error creating order:', error);
@@ -327,6 +324,7 @@ const Checkout = () => {
   const createCashfreeOrder = async (order, customerDetails) => {
     try {
       console.log('💳 Creating Cashfree order...');
+      console.log('💰 Customer details for Cashfree:', customerDetails);
       
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-cashfree-order`, {
         method: 'POST',
@@ -441,16 +439,6 @@ const Checkout = () => {
         if (result.error) {
           console.error('❌ Payment failed:', result.error);
           toast.error(`Payment failed: ${result.error.message}`);
-          
-          await supabase
-            .from('orders')
-            .update({ 
-              status: 'cancelled', 
-              payment_status: 'failed',
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', order.id);
-          
           setProcessing(false);
         } else if (result.redirect) {
           console.log('🔄 Payment redirect:', result.redirect);
