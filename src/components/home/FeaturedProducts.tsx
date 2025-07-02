@@ -112,6 +112,7 @@ const FeaturedProducts = () => {
                         className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700"
                         loading="lazy"
                         onError={(e) => {
+                          console.error('Failed to load product image:', product.image_url);
                           e.currentTarget.src = '/placeholder.svg';
                         }}
                       />

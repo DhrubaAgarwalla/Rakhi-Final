@@ -409,13 +409,15 @@ const Checkout = () => {
         return;
       }
 
-      // Prepare customer details for Cashfree - use form data directly
+      // Prepare customer details for Cashfree - use form data directly for both guest and logged-in users
       const customerDetails = {
         customer_id: currentUser?.id || `guest-${Date.now()}`,
         customer_name: `${formData.firstName} ${formData.lastName}`,
         customer_email: formData.email,
         customer_phone: formData.phone,
       };
+
+      console.log('💰 Customer details for Cashfree:', customerDetails);
 
       // Create Cashfree order
       const cashfreeOrder = await createCashfreeOrder(order, customerDetails);

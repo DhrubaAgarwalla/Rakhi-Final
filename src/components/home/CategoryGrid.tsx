@@ -82,6 +82,7 @@ const CategoryGrid = () => {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     loading="lazy"
                     onError={(e) => {
+                      console.error('Failed to load image:', category.image);
                       e.currentTarget.src = '/placeholder.svg';
                     }}
                   />
