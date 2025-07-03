@@ -85,18 +85,8 @@ const CategoryGrid = () => {
                     onError={(e) => {
                       console.error(`❌ Failed to load image: ${category.image}`);
                       console.error('Error details:', e);
-                      // Try alternative image sources
-                      if (e.currentTarget.src.includes('/Designer.png')) {
-                        e.currentTarget.src = 'https://images.pexels.com/photos/6069112/pexels-photo-6069112.jpeg?auto=compress&cs=tinysrgb&w=400';
-                      } else if (e.currentTarget.src.includes('/kids.png')) {
-                        e.currentTarget.src = 'https://images.pexels.com/photos/6069113/pexels-photo-6069113.jpeg?auto=compress&cs=tinysrgb&w=400';
-                      } else if (e.currentTarget.src.includes('/premium.png')) {
-                        e.currentTarget.src = 'https://images.pexels.com/photos/6069114/pexels-photo-6069114.jpeg?auto=compress&cs=tinysrgb&w=400';
-                      } else if (e.currentTarget.src.includes('/traditional.png')) {
-                        e.currentTarget.src = 'https://images.pexels.com/photos/6069115/pexels-photo-6069115.jpeg?auto=compress&cs=tinysrgb&w=400';
-                      } else {
-                        e.currentTarget.src = '/placeholder.svg';
-                      }
+                      // Set fallback to placeholder
+                      e.currentTarget.src = '/placeholder.svg';
                     }}
                   />
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300"></div>
