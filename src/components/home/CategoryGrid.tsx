@@ -10,7 +10,7 @@ const CategoryGrid = () => {
       id: 1,
       name: 'Designer Rakhi',
       description: 'Elegant & contemporary designs',
-      image: 'https://images.pexels.com/photos/8828489/pexels-photo-8828489.jpeg?auto=compress&cs=tinysrgb&w=800',
+      image: '/Designer.png',
       color: 'from-purple-500 to-pink-500',
       bgGradient: 'bg-gradient-to-br from-purple-50 to-pink-50',
       icon: Crown,
@@ -22,7 +22,7 @@ const CategoryGrid = () => {
       id: 2,
       name: 'Kids Rakhi',
       description: 'Fun & colorful for little ones',
-      image: 'https://images.pexels.com/photos/8828490/pexels-photo-8828490.jpeg?auto=compress&cs=tinysrgb&w=800',
+      image: '/kids.png',
       color: 'from-blue-500 to-cyan-500',
       bgGradient: 'bg-gradient-to-br from-blue-50 to-cyan-50',
       icon: Heart,
@@ -34,7 +34,7 @@ const CategoryGrid = () => {
       id: 3,
       name: 'Premium Sets',
       description: 'Luxury rakhi with sweets & gifts',
-      image: 'https://images.pexels.com/photos/8828491/pexels-photo-8828491.jpeg?auto=compress&cs=tinysrgb&w=800',
+      image: '/premium.png',
       color: 'from-amber-500 to-orange-500',
       bgGradient: 'bg-gradient-to-br from-amber-50 to-orange-50',
       icon: Star,
@@ -46,7 +46,7 @@ const CategoryGrid = () => {
       id: 4,
       name: 'Traditional Rakhi',
       description: 'Classic & authentic designs',
-      image: 'https://images.pexels.com/photos/8828492/pexels-photo-8828492.jpeg?auto=compress&cs=tinysrgb&w=800',
+      image: '/traditional.png',
       color: 'from-red-500 to-pink-500',
       bgGradient: 'bg-gradient-to-br from-red-50 to-pink-50',
       icon: Gift,
@@ -97,19 +97,18 @@ const CategoryGrid = () => {
               <CardContent className="p-0 relative">
                 {/* Image Container */}
                 <div className="relative h-72 lg:h-80 overflow-hidden">
-                  <img 
-                    src={category.image} 
-                    alt={category.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 filter group-hover:brightness-110"
-                    loading="lazy"
-                    onLoad={() => console.log(`✅ Image loaded: ${category.image}`)}
-                    onError={(e) => {
-                      console.error(`❌ Failed to load image: ${category.image}`);
-                      // Fallback to a solid color background
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.parentElement.style.background = `linear-gradient(135deg, ${category.color.split(' ')[1]} 0%, ${category.color.split(' ')[3]} 100%)`;
+                  <div 
+                    className="w-full h-full bg-cover bg-center bg-no-repeat group-hover:scale-110 transition-transform duration-700 filter group-hover:brightness-110"
+                    style={{
+                      backgroundImage: `url('${category.image}')`,
+                      backgroundColor: `linear-gradient(135deg, ${category.color.replace('from-', '').replace('to-', '').split(' ')[0]} 0%, ${category.color.replace('from-', '').replace('to-', '').split(' ')[1]} 100%)`
                     }}
-                  />
+                  >
+                    {/* Fallback content if image doesn't load */}
+                    <div className="w-full h-full flex items-center justify-center">
+                      <category.icon className="h-24 w-24 text-white/50" />
+                    </div>
+                  </div>
                   
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500"></div>
