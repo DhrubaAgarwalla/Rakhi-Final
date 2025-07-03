@@ -10,7 +10,7 @@ const CategoryGrid = () => {
       id: 1,
       name: 'Designer Rakhi',
       description: 'Elegant & contemporary designs',
-      image: '/Designer.png',
+      image: '/Designer.webp',
       color: 'from-purple-500 to-pink-500',
       bgGradient: 'bg-gradient-to-br from-purple-50 to-pink-50',
       icon: Crown,
@@ -22,7 +22,7 @@ const CategoryGrid = () => {
       id: 2,
       name: 'Kids Rakhi',
       description: 'Fun & colorful for little ones',
-      image: '/kids.png',
+      image: '/kids.webp',
       color: 'from-blue-500 to-cyan-500',
       bgGradient: 'bg-gradient-to-br from-blue-50 to-cyan-50',
       icon: Heart,
@@ -34,7 +34,7 @@ const CategoryGrid = () => {
       id: 3,
       name: 'Premium Sets',
       description: 'Luxury rakhi with sweets & gifts',
-      image: '/premium.png',
+      image: '/premium.webp',
       color: 'from-amber-500 to-orange-500',
       bgGradient: 'bg-gradient-to-br from-amber-50 to-orange-50',
       icon: Star,
@@ -46,7 +46,7 @@ const CategoryGrid = () => {
       id: 4,
       name: 'Traditional Rakhi',
       description: 'Classic & authentic designs',
-      image: '/traditional.png',
+      image: '/traditional.webp',
       color: 'from-red-500 to-pink-500',
       bgGradient: 'bg-gradient-to-br from-red-50 to-pink-50',
       icon: Gift,
@@ -104,10 +104,7 @@ const CategoryGrid = () => {
                       backgroundColor: `linear-gradient(135deg, ${category.color.replace('from-', '').replace('to-', '').split(' ')[0]} 0%, ${category.color.replace('from-', '').replace('to-', '').split(' ')[1]} 100%)`
                     }}
                   >
-                    {/* Fallback content if image doesn't load */}
-                    <div className="w-full h-full flex items-center justify-center">
-                      <category.icon className="h-24 w-24 text-white/50" />
-                    </div>
+                    
                   </div>
                   
                   {/* Gradient Overlay */}
@@ -120,21 +117,9 @@ const CategoryGrid = () => {
                     </span>
                   </div>
 
-                  {/* Icon */}
-                  <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-500 shadow-lg">
-                    <category.icon className="h-7 w-7 text-white drop-shadow-lg" />
-                  </div>
+                  
 
-                  {/* Hover Content */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                    <div className="text-center text-white">
-                      <div className="bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30">
-                        <category.icon className="h-12 w-12 mx-auto mb-3 text-white drop-shadow-lg" />
-                        <p className="text-lg font-semibold mb-2">{category.name}</p>
-                        <p className="text-sm opacity-90">{category.description}</p>
-                      </div>
-                    </div>
-                  </div>
+                  
                 </div>
 
                 {/* Content Section */}

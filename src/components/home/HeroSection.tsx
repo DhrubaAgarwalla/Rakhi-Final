@@ -84,7 +84,7 @@ const HeroSection = () => {
                 {/* Main Image Container */}
                 <div className="relative bg-white rounded-3xl shadow-2xl p-4 sm:p-8 lg:p-8 transform lg:rotate-3 hover:rotate-0 transition-transform duration-500">
                   <img 
-                    src="/Gemini_Generated_Image_gqfwmgqfwmgqfwmg.png" 
+                    src="/Gemini_Generated_Image_gqfwmgqfwmgqfwmg.webp" 
                     alt="Beautiful Rakhi Collection" 
                     className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-2xl"
                     loading="eager"

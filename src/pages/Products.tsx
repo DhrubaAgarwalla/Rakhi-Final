@@ -29,9 +29,8 @@ const Products = () => {
 
   useEffect(() => {
     // Update filters when category param changes
-    if (category) {
-      setFilters(prev => ({ ...prev, category }));
-    }
+    // If category is undefined (e.g., on /products), set filter to empty string for "All Products"
+    setFilters(prev => ({ ...prev, category: category || '' }));
   }, [category]);
 
   useEffect(() => {
