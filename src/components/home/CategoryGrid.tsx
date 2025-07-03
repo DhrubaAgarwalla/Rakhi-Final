@@ -11,7 +11,6 @@ const CategoryGrid = () => {
       name: 'Designer Rakhi',
       description: 'Elegant & contemporary designs',
       image: '/Designer.png',
-      fallbackImage: 'https://images.pexels.com/photos/6069112/pexels-photo-6069112.jpeg?auto=compress&cs=tinysrgb&w=600',
       color: 'from-purple-500 to-pink-500',
       bgGradient: 'bg-gradient-to-br from-purple-50 to-pink-50',
       icon: Crown,
@@ -24,7 +23,6 @@ const CategoryGrid = () => {
       name: 'Kids Rakhi',
       description: 'Fun & colorful for little ones',
       image: '/kids.png',
-      fallbackImage: 'https://images.pexels.com/photos/6069113/pexels-photo-6069113.jpeg?auto=compress&cs=tinysrgb&w=600',
       color: 'from-blue-500 to-cyan-500',
       bgGradient: 'bg-gradient-to-br from-blue-50 to-cyan-50',
       icon: Heart,
@@ -37,7 +35,6 @@ const CategoryGrid = () => {
       name: 'Premium Sets',
       description: 'Luxury rakhi with sweets & gifts',
       image: '/premium.png',
-      fallbackImage: 'https://images.pexels.com/photos/6069114/pexels-photo-6069114.jpeg?auto=compress&cs=tinysrgb&w=600',
       color: 'from-amber-500 to-orange-500',
       bgGradient: 'bg-gradient-to-br from-amber-50 to-orange-50',
       icon: Star,
@@ -50,7 +47,6 @@ const CategoryGrid = () => {
       name: 'Traditional Rakhi',
       description: 'Classic & authentic designs',
       image: '/traditional.png',
-      fallbackImage: 'https://images.pexels.com/photos/6069115/pexels-photo-6069115.jpeg?auto=compress&cs=tinysrgb&w=600',
       color: 'from-red-500 to-pink-500',
       bgGradient: 'bg-gradient-to-br from-red-50 to-pink-50',
       icon: Gift,
@@ -60,24 +56,10 @@ const CategoryGrid = () => {
     }
   ];
 
-  const handleImageError = (e, fallbackImage) => {
-    console.log(`🔄 Primary image failed, trying fallback: ${fallbackImage}`);
-    if (e.currentTarget.src !== fallbackImage) {
-      e.currentTarget.src = fallbackImage;
-    } else {
-      console.log('❌ Fallback image also failed, using placeholder');
-      e.currentTarget.src = '/placeholder.svg';
-    }
-  };
-
-  const handleImageLoad = (categoryName) => {
-    console.log(`✅ Image loaded successfully for: ${categoryName}`);
-  };
-
   return (
     <section className="py-20 lg:py-32 bg-gradient-to-b from-gray-50 via-white to-gray-50">
       <div className="container mx-auto px-4">
-        {/* Enhanced Section Header */}
+        {/* Section Header */}
         <div className="text-center mb-20">
           <div className="inline-flex items-center space-x-3 bg-festive-gradient text-white rounded-full px-8 py-3 mb-8 shadow-lg">
             <Sparkles className="h-5 w-5 animate-pulse" />
@@ -101,7 +83,7 @@ const CategoryGrid = () => {
           </div>
         </div>
 
-        {/* Enhanced Categories Grid */}
+        {/* Categories Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
           {categories.map((category, index) => (
             <Card 
@@ -113,33 +95,38 @@ const CategoryGrid = () => {
               }}
             >
               <CardContent className="p-0 relative">
-                {/* Enhanced Image Container */}
+                {/* Image Container */}
                 <div className="relative h-72 lg:h-80 overflow-hidden">
                   <img 
                     src={category.image} 
                     alt={category.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 filter group-hover:brightness-110"
                     loading="lazy"
-                    onLoad={() => handleImageLoad(category.name)}
-                    onError={(e) => handleImageError(e, category.fallbackImage)}
+                    onLoad={() => console.log(`✅ Image loaded: ${category.image}`)}
+                    onError={(e) => {
+                      console.error(`❌ Failed to load image: ${category.image}`);
+                      console.error('Image element:', e.currentTarget);
+                      console.error('Current src:', e.currentTarget.src);
+                      console.error('Natural dimensions:', e.currentTarget.naturalWidth, 'x', e.currentTarget.naturalHeight);
+                    }}
                   />
                   
-                  {/* Enhanced Gradient Overlay */}
+                  {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500"></div>
                   
-                  {/* Enhanced Badge */}
+                  {/* Badge */}
                   <div className="absolute top-4 left-4">
                     <span className={`${category.badgeColor} text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg backdrop-blur-sm`}>
                       {category.badge}
                     </span>
                   </div>
 
-                  {/* Enhanced Icon */}
+                  {/* Icon */}
                   <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-500 shadow-lg">
                     <category.icon className="h-7 w-7 text-white drop-shadow-lg" />
                   </div>
 
-                  {/* Enhanced Hover Content */}
+                  {/* Hover Content */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
                     <div className="text-center text-white">
                       <div className="bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30">
@@ -151,7 +138,7 @@ const CategoryGrid = () => {
                   </div>
                 </div>
 
-                {/* Enhanced Content Section */}
+                {/* Content Section */}
                 <div className="p-8 lg:p-10 relative">
                   {/* Background Pattern */}
                   <div className="absolute inset-0 opacity-5">
@@ -167,7 +154,7 @@ const CategoryGrid = () => {
                       {category.description}
                     </p>
                     
-                    {/* Enhanced CTA Button */}
+                    {/* CTA Button */}
                     <Link to={category.href}>
                       <Button 
                         className="w-full group-hover:bg-festive-gradient group-hover:text-white group-hover:shadow-xl transition-all duration-500 bg-transparent border-2 border-gray-300 text-gray-700 hover:border-transparent font-bold py-4 px-6 rounded-2xl text-lg"
@@ -181,14 +168,14 @@ const CategoryGrid = () => {
                   </div>
                 </div>
 
-                {/* Enhanced Decorative Elements */}
+                {/* Decorative Elements */}
                 <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent group-hover:via-festive-red transition-colors duration-500"></div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Enhanced Call to Action */}
+        {/* Call to Action */}
         <div className="text-center mt-20 lg:mt-24">
           <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-xl border border-gray-100 max-w-4xl mx-auto">
             <h3 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6 font-playfair">
@@ -211,7 +198,7 @@ const CategoryGrid = () => {
           </div>
         </div>
 
-        {/* Enhanced Trust Indicators */}
+        {/* Trust Indicators */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-16 lg:mt-20">
           {[
             { icon: Heart, text: 'Handcrafted with Love', color: 'text-red-500' },
