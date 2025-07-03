@@ -73,14 +73,8 @@ const HeroSection = () => {
                   <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-sm font-medium">Free Shipping Above ₹499</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium">10K+ Happy Customers</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium">Same Day Delivery</span>
-                </div>
+                
+                
               </div>
             </div>
 
@@ -118,10 +112,7 @@ const HeroSection = () => {
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-medium">Free Shipping Above ₹499</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">10K+ Happy Customers</span>
-            </div>
+            
           </div>
         </div>
       </div>

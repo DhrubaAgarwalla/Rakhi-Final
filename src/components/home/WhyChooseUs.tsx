@@ -49,12 +49,7 @@ const WhyChooseUs = () => {
     }
   ];
 
-  const stats = [
-    { icon: Users, number: '10K+', label: 'Happy Customers', color: 'text-festive-red' },
-    { icon: Gift, number: '500+', label: 'Rakhi Designs', color: 'text-festive-orange' },
-    { icon: Star, number: '4.8★', label: 'Average Rating', color: 'text-festive-gold' },
-    { icon: Clock, number: '99%', label: 'On-Time Delivery', color: 'text-green-600' }
-  ];
+  
 
   return (
     <section className="py-16 lg:py-24 bg-gradient-to-b from-gray-50 to-white">
@@ -74,21 +69,21 @@ const WhyChooseUs = () => {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
           {features.map((feature, index) => (
             <Card 
               key={index} 
               className="group hover:shadow-xl transition-all duration-500 border-0 bg-white hover:-translate-y-2 transform"
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              <CardContent className="p-8 text-center">
-                <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl ${feature.bgColor} group-hover:scale-110 transition-transform duration-300 mb-6`}>
-                  <feature.icon className={`h-10 w-10 ${feature.color}`} />
+              <CardContent className="p-4 sm:p-8 text-center">
+                <div className={`inline-flex items-center justify-center w-12 h-12 sm:w-20 sm:h-20 rounded-2xl ${feature.bgColor} group-hover:scale-110 transition-transform duration-300 mb-4 sm:mb-6`}>
+                  <feature.icon className={`h-6 w-6 sm:h-10 sm:w-10 ${feature.color}`} />
                 </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4 group-hover:text-festive-red transition-colors duration-300">
+                <h3 className="text-base sm:text-xl font-bold text-gray-800 group-hover:text-festive-red transition-colors duration-300">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed hidden sm:block mt-2">
                   {feature.description}
                 </p>
               </CardContent>
@@ -96,46 +91,25 @@ const WhyChooseUs = () => {
           ))}
         </div>
 
-        {/* Trust Indicators */}
-        <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-xl border border-gray-100">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-            {stats.map((stat, index) => (
-              <div 
-                key={index} 
-                className="group"
-                style={{ animationDelay: `${index * 150}ms` }}
-              >
-                <div className="flex justify-center mb-4">
-                  <div className="bg-gray-50 rounded-2xl p-4 group-hover:bg-gray-100 transition-colors duration-300">
-                    <stat.icon className={`h-8 w-8 ${stat.color}`} />
-                  </div>
-                </div>
-                <div className={`text-3xl lg:text-4xl font-bold ${stat.color} mb-2 group-hover:scale-110 transition-transform duration-300`}>
-                  {stat.number}
-                </div>
-                <div className="text-gray-600 font-medium">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        
 
         {/* Call to Action */}
-        <div className="text-center mt-16">
-          <div className="bg-festive-gradient rounded-3xl p-8 lg:p-12 text-white">
-            <h3 className="text-2xl lg:text-3xl font-bold mb-4 font-playfair">
+        <div className="text-center mt-12 sm:mt-16">
+          <div className="bg-festive-gradient rounded-3xl p-6 sm:p-8 lg:p-12 text-white">
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 font-playfair">
               Ready to Celebrate Raksha Bandhan?
             </h3>
-            <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg mb-6 sm:mb-8 opacity-90 max-w-2xl mx-auto">
               Join thousands of families who trust RakhiMart for their special celebrations. Start shopping today!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/products">
-                <button className="bg-white text-gray-800 px-8 py-4 rounded-full font-semibold hover:bg-gray-100 transition-colors duration-300 transform hover:scale-105">
+                <button className="bg-white text-gray-800 px-6 py-3 sm:px-8 sm:py-4 rounded-full font-semibold hover:bg-gray-100 transition-colors duration-300 transform hover:scale-105">
                   Shop Now
                 </button>
               </Link>
               <Link to="/products">
-                <button className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-gray-800 transition-all duration-300 transform hover:scale-105">
+                <button className="border-2 border-white text-white px-6 py-3 sm:px-8 sm:py-4 rounded-full font-semibold hover:bg-white hover:text-gray-800 transition-all duration-300 transform hover:scale-105">
                   View Collections
                 </button>
               </Link>

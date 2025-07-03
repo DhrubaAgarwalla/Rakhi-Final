@@ -6,6 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 
+import { getImageUrl } from '@/lib/utils';
+
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,7 @@ const FeaturedProducts = () => {
   }
 
   return (
-    <section className="py-16 lg:py-24 bg-white">
+    <section className="py-6 lg:py-10 bg-white">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -97,100 +99,93 @@ const FeaturedProducts = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {products.map((product, index) => (
-              <Card 
-                key={product.id} 
-                className="group hover:shadow-2xl transition-all duration-500 overflow-hidden border-0 bg-white hover:-translate-y-2 transform"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <CardContent className="p-0">
-                  {/* Image Container - Fixed Navigation */}
-                  <div className="relative overflow-hidden">
-                    <Link to={`/product/${product.slug}`} className="block">
+              <Link to={`/product/${product.slug}`} key={product.id} className="block group">
+                <Card 
+                  className="hover:shadow-2xl transition-all duration-500 overflow-hidden border-0 bg-white hover:-translate-y-2 transform h-full"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <CardContent className="p-0">
+                    {/* Image Container */}
+                    <div className="relative overflow-hidden">
                       <img 
-                        src={product.image_url || '/placeholder.svg'} 
+                        src={getImageUrl(product.image_url)} 
                         alt={product.name}
                         className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700"
-                        loading="lazy"
+                        onLoad={() => console.log('Image loaded:', getImageUrl(product.image_url))}
                         onError={(e) => {
-                          console.error('Failed to load product image:', product.image_url);
+                          console.error('Failed to load product image:', product.image_url, 'Generated URL:', getImageUrl(product.image_url));
                           e.currentTarget.src = '/placeholder.svg';
                         }}
                       />
-                    </Link>
-                    
-                    {/* Badges */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-2">
-                      {product.original_price > product.price && (
-                        <Badge className="bg-festive-red text-white font-bold">
-                          -{calculateDiscount(product.price, product.original_price)}% OFF
+                      
+                      {/* Badges */}
+                      <div className="absolute top-3 left-3 flex flex-col gap-2">
+                        {product.original_price > product.price && (
+                          <Badge className="bg-festive-red text-white font-bold">
+                            -{calculateDiscount(product.price, product.original_price)}% OFF
+                          </Badge>
+                        )}
+                        <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                          Featured
                         </Badge>
-                      )}
-                      <Badge variant="secondary" className="bg-white/90 text-gray-800">
-                        Featured
-                      </Badge>
-                    </div>
+                      </div>
 
-                    {/* Quick Action Buttons */}
-                    <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                      <Link to={`/product/${product.slug}`}>
+                      {/* Quick Action Buttons */}
+                      <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
                         <Button size="sm" variant="ghost" className="bg-white/90 hover:bg-white h-10 w-10 p-0 rounded-full shadow-lg">
                           <Eye className="h-4 w-4" />
                         </Button>
-                      </Link>
-                    </div>
+                      </div>
 
-                    {/* Quick Add to Cart */}
-                    <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                      <Link to={`/product/${product.slug}`} className="block w-full">
+                      {/* Quick Add to Cart */}
+                      <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                         <Button className="w-full bg-festive-gradient hover:opacity-90 text-white rounded-full font-semibold">
                           <ShoppingCart className="h-4 w-4 mr-2" />
                           View Product
                         </Button>
-                      </Link>
+                      </div>
+
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
 
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </div>
-
-                  {/* Product Details */}
-                  <div className="p-4 lg:p-6">
-                    {/* Category */}
-                    <p className="text-sm text-gray-500 mb-2 font-medium">{product.categories?.name || 'Rakhi'}</p>
-                    
-                    {/* Product Name - Fixed Navigation */}
-                    <Link to={`/product/${product.slug}`} className="block">
-                      <h3 className="font-bold text-lg mb-3 group-hover:text-festive-red transition-colors duration-300 line-clamp-2 cursor-pointer">
+                    {/* Product Details */}
+                    <div className="p-4 lg:p-6">
+                      {/* Category */}
+                      <p className="text-sm text-gray-500 mb-2 font-medium">{product.categories?.name || 'Rakhi'}</p>
+                      
+                      {/* Product Name */}
+                      <h3 className="font-bold text-lg mb-3 group-hover:text-festive-red transition-colors duration-300 line-clamp-2">
                         {product.name}
                       </h3>
-                    </Link>
 
-                    {/* Rating */}
-                    <div className="flex items-center space-x-1 mb-4">
-                      <div className="flex">
-                        {renderStars(product.rating)}
+                      {/* Rating */}
+                      <div className="flex items-center space-x-1 mb-4">
+                        <div className="flex">
+                          {renderStars(product.rating)}
+                        </div>
+                        <span className="text-sm text-gray-600 ml-2">
+                          {(product.rating || 4.5).toFixed(1)} ({product.review_count || '0'})
+                        </span>
                       </div>
-                      <span className="text-sm text-gray-600 ml-2">
-                        {(product.rating || 4.5).toFixed(1)} ({product.review_count || '0'})
-                      </span>
-                    </div>
 
-                    {/* Price */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xl font-bold text-gray-800">₹{product.price}</span>
-                        {product.original_price > product.price && (
-                          <span className="text-sm text-gray-500 line-through">₹{product.original_price}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-xs text-gray-500">In Stock</span>
+                      {/* Price */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xl font-bold text-gray-800">₹{product.price}</span>
+                          {product.original_price > product.price && (
+                            <span className="text-sm text-gray-500 line-through">₹{product.original_price}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-gray-500">In Stock</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         )}

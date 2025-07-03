@@ -175,42 +175,29 @@ const CategoryGrid = () => {
         </div>
 
         {/* Call to Action */}
-        <div className="text-center mt-20 lg:mt-24">
-          <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-xl border border-gray-100 max-w-4xl mx-auto">
-            <h3 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6 font-playfair">
+        <div className="text-center mt-8 lg:mt-12">
+          <div className="bg-white rounded-3xl p-4 sm:p-8 lg:p-12 shadow-xl border border-gray-100 max-w-4xl mx-auto">
+            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-4 sm:mb-6 font-playfair">
               Can't Decide? <span className="text-festive-red">Explore All</span>
             </h3>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto">
               Browse our complete collection of premium Rakhis and find the perfect one for your special celebration
             </p>
             
             <Link to="/products">
               <Button 
                 size="lg" 
-                className="bg-festive-gradient hover:opacity-90 text-white px-12 py-6 rounded-2xl font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
+                className="bg-festive-gradient hover:opacity-90 text-white px-6 sm:px-12 py-3 sm:py-6 rounded-2xl font-bold text-base sm:text-xl transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
               >
-                <Gift className="mr-3 h-6 w-6" />
+                <Gift className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6" />
                 View All Categories
-                <ArrowRight className="ml-3 h-6 w-6" />
+                <ArrowRight className="ml-2 sm:ml-3 h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Trust Indicators */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-16 lg:mt-20">
-          {[
-            { icon: Heart, text: 'Handcrafted with Love', color: 'text-red-500' },
-            { icon: Star, text: 'Premium Quality', color: 'text-yellow-500' },
-            { icon: Gift, text: 'Beautiful Packaging', color: 'text-purple-500' },
-            { icon: Sparkles, text: 'Traditional Designs', color: 'text-blue-500' }
-          ].map((item, index) => (
-            <div key={index} className="text-center p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <item.icon className={`h-10 w-10 ${item.color} mx-auto mb-3`} />
-              <p className="text-gray-700 font-semibold">{item.text}</p>
-            </div>
-          ))}
-        </div>
+        
       </div>
     </section>
   );

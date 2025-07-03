@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star, ShoppingCart, Heart } from 'lucide-react';
+import { getImageUrl } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -177,7 +178,7 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
           <CardContent className="p-4">
             <div className="flex gap-4">
               <img
-                src={product.image_url || '/placeholder.svg'}
+                src={getImageUrl(product.image_url)}
                 alt={product.name}
                 className="w-24 h-24 object-cover rounded-lg"
                 onError={(e) => {
@@ -222,7 +223,7 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
       <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
         <div className="relative">
           <img
-            src={product.image_url || '/placeholder.svg'}
+            src={getImageUrl(product.image_url)}
             alt={product.name}
             className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
