@@ -10,7 +10,7 @@ const CategoryGrid = () => {
       id: 1,
       name: 'Designer Rakhi',
       description: 'Elegant & contemporary designs',
-      image: '/Designer.png',
+      image: 'https://images.pexels.com/photos/8828489/pexels-photo-8828489.jpeg?auto=compress&cs=tinysrgb&w=800',
       color: 'from-purple-500 to-pink-500',
       bgGradient: 'bg-gradient-to-br from-purple-50 to-pink-50',
       icon: Crown,
@@ -22,7 +22,7 @@ const CategoryGrid = () => {
       id: 2,
       name: 'Kids Rakhi',
       description: 'Fun & colorful for little ones',
-      image: '/kids.png',
+      image: 'https://images.pexels.com/photos/8828490/pexels-photo-8828490.jpeg?auto=compress&cs=tinysrgb&w=800',
       color: 'from-blue-500 to-cyan-500',
       bgGradient: 'bg-gradient-to-br from-blue-50 to-cyan-50',
       icon: Heart,
@@ -34,7 +34,7 @@ const CategoryGrid = () => {
       id: 3,
       name: 'Premium Sets',
       description: 'Luxury rakhi with sweets & gifts',
-      image: '/premium.png',
+      image: 'https://images.pexels.com/photos/8828491/pexels-photo-8828491.jpeg?auto=compress&cs=tinysrgb&w=800',
       color: 'from-amber-500 to-orange-500',
       bgGradient: 'bg-gradient-to-br from-amber-50 to-orange-50',
       icon: Star,
@@ -46,7 +46,7 @@ const CategoryGrid = () => {
       id: 4,
       name: 'Traditional Rakhi',
       description: 'Classic & authentic designs',
-      image: '/traditional.png',
+      image: 'https://images.pexels.com/photos/8828492/pexels-photo-8828492.jpeg?auto=compress&cs=tinysrgb&w=800',
       color: 'from-red-500 to-pink-500',
       bgGradient: 'bg-gradient-to-br from-red-50 to-pink-50',
       icon: Gift,
@@ -105,9 +105,9 @@ const CategoryGrid = () => {
                     onLoad={() => console.log(`✅ Image loaded: ${category.image}`)}
                     onError={(e) => {
                       console.error(`❌ Failed to load image: ${category.image}`);
-                      console.error('Image element:', e.currentTarget);
-                      console.error('Current src:', e.currentTarget.src);
-                      console.error('Natural dimensions:', e.currentTarget.naturalWidth, 'x', e.currentTarget.naturalHeight);
+                      // Fallback to a solid color background
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.parentElement.style.background = `linear-gradient(135deg, ${category.color.split(' ')[1]} 0%, ${category.color.split(' ')[3]} 100%)`;
                     }}
                   />
                   
