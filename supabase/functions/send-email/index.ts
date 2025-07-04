@@ -554,6 +554,14 @@ Deno.serve(async (req) => {
     const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@rakhimart.com'
     const fromName = Deno.env.get('FROM_NAME') || 'RakhiMart'
 
+    console.log('📧 Email configuration:', {
+      provider: emailProvider,
+      hasApiKey: !!emailApiKey,
+      fromEmail,
+      fromName,
+      type
+    })
+
     if (!emailApiKey) {
       throw new Error('EMAIL_API_KEY environment variable is required')
     }
@@ -578,7 +586,7 @@ Deno.serve(async (req) => {
           htmlContent: template.htmlContent,
           textContent: template.textContent
         })
-        console.log('Order confirmation email sent to:', data.customerEmail)
+        console.log('✅ Order confirmation email sent to:', data.customerEmail)
         break
 
       case 'shipping_notification':
@@ -591,7 +599,7 @@ Deno.serve(async (req) => {
           htmlContent: template.htmlContent,
           textContent: template.textContent
         })
-        console.log('Shipping notification email sent to:', data.order.customerEmail)
+        console.log('✅ Shipping notification email sent to:', data.order.customerEmail)
         break
 
       case 'custom':
@@ -603,7 +611,7 @@ Deno.serve(async (req) => {
           htmlContent: data.htmlContent,
           textContent: data.textContent
         })
-        console.log('Custom email sent to:', data.to)
+        console.log('✅ Custom email sent to:', data.to)
         break
 
       default:
@@ -615,7 +623,7 @@ Deno.serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Email sending error:', error)
+    console.error('❌ Email sending error:', error)
     return new Response(JSON.stringify({ 
       success: false,
       error: error.message 
