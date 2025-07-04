@@ -466,7 +466,7 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Reviews Section */}
+        {/* Reviews Section - This is where users can rate and review products */}
         <ReviewSection 
           productId={product.id}
           productName={product.name}
