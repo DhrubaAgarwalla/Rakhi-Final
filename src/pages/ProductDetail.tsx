@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Star, ShoppingCart, Heart, Share2, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import ReviewSection from '@/components/products/ReviewSection';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -236,6 +237,14 @@ const ProductDetail = () => {
     ));
   };
 
+  const handleRatingUpdate = (newRating: number, newCount: number) => {
+    setProduct(prev => ({
+      ...prev,
+      rating: newRating,
+      review_count: newCount
+    }));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -350,9 +359,9 @@ const ProductDetail = () => {
               </h1>
               
               <div className="flex items-center mb-4">
-                <div className="flex">{renderStars(Math.floor(product.rating || 4))}</div>
+                <div className="flex">{renderStars(Math.floor(product.rating || 0))}</div>
                 <span className="ml-2 text-gray-600">
-                  ({product.review_count || 0} reviews)
+                  {(product.rating || 0).toFixed(1)} ({product.review_count || 0} reviews)
                 </span>
               </div>
 
@@ -456,6 +465,15 @@ const ProductDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <ReviewSection 
+          productId={product.id}
+          productName={product.name}
+          currentRating={product.rating || 0}
+          reviewCount={product.review_count || 0}
+          onRatingUpdate={handleRatingUpdate}
+        />
       </main>
       <Footer />
     </div>

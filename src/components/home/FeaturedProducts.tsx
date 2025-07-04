@@ -47,7 +47,7 @@ const FeaturedProducts = () => {
       <Star
         key={i}
         className={`h-4 w-4 ${
-          i < Math.floor(rating || 4.5) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+          i < Math.floor(rating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'
         }`}
       />
     ));
@@ -165,7 +165,7 @@ const FeaturedProducts = () => {
                           {renderStars(product.rating)}
                         </div>
                         <span className="text-sm text-gray-600 ml-2">
-                          {(product.rating || 4.5).toFixed(1)} ({product.review_count || '0'})
+                          {(product.rating || 0).toFixed(1)} ({product.review_count || '0'})
                         </span>
                       </div>
 

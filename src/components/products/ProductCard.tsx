@@ -188,6 +188,14 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
               <div className="flex-1">
                 <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
                 <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
+                
+                <div className="flex items-center mb-2">
+                  <div className="flex">{renderStars(Math.floor(product.rating || 0))}</div>
+                  <span className="ml-2 text-sm text-gray-500">
+                    {(product.rating || 0).toFixed(1)} ({product.review_count || 0})
+                  </span>
+                </div>
+                
                 <div className="flex flex-wrap items-center justify-between gap-2 mt-2 sm:mt-0">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-festive-red">₹{product.price}</span>
@@ -248,7 +256,7 @@ const ProductCard = ({ product, viewMode = 'grid' }: ProductCardProps) => {
           <div className="flex items-center mb-3">
             <div className="flex">{renderStars(Math.floor(product.rating || 0))}</div>
             <span className="ml-2 text-sm text-gray-500">
-              ({product.review_count || 0} reviews)
+              {(product.rating || 0).toFixed(1)} ({product.review_count || 0})
             </span>
           </div>
 
