@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -45,7 +44,7 @@ const Auth = () => {
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success('Account created! Please check your email to verify your account.');
+          toast.success('Account created successfully! You can now start shopping.');
         }
       }
     } catch (error) {

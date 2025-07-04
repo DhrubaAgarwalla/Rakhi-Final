@@ -53,7 +53,7 @@ Create a `.env` file in the root directory with the following variables:
 
 ```env
 # Supabase Configuration
-VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # Cashfree Configuration (Frontend)
@@ -70,12 +70,76 @@ CASHFREE_WEBHOOK_SECRET=your_webhook_secret
 EMAIL_PROVIDER=sendgrid  # sendgrid, mailgun, ses, postmark
 EMAIL_API_KEY=your_email_api_key
 EMAIL_DOMAIN=your_domain  # Required for Mailgun
+FROM_EMAIL=noreply@rakhimart.com
+FROM_NAME=RakhiMart
 
 # Delivery Service Configuration
 DELIVERY_PROVIDER=delhivery  # delhivery, shiprocket, bluedart, dtdc
 DELIVERY_API_KEY=your_delivery_api_key
 DELIVERY_API_SECRET=your_delivery_api_secret  # Required for Shiprocket
 ```
+
+### Email Service Setup
+
+#### Option 1: SendGrid (Recommended)
+1. **Create Account**: Sign up at [SendGrid](https://sendgrid.com/)
+2. **Create API Key**: 
+   - Go to Settings > API Keys
+   - Click "Create API Key"
+   - Choose "Restricted Access" and enable "Mail Send" permissions
+   - Copy the API key
+3. **Verify Sender**: 
+   - Go to Settings > Sender Authentication
+   - Verify your sender email address
+4. **Environment Variables**:
+   ```env
+   EMAIL_PROVIDER=sendgrid
+   EMAIL_API_KEY=your_sendgrid_api_key
+   FROM_EMAIL=your_verified_email@domain.com
+   FROM_NAME=RakhiMart
+   ```
+
+#### Option 2: Mailgun
+1. **Create Account**: Sign up at [Mailgun](https://www.mailgun.com/)
+2. **Add Domain**: 
+   - Add and verify your domain in the Mailgun dashboard
+   - Follow DNS setup instructions
+3. **Get API Key**: 
+   - Go to Settings > API Keys
+   - Copy your Private API key
+4. **Environment Variables**:
+   ```env
+   EMAIL_PROVIDER=mailgun
+   EMAIL_API_KEY=your_mailgun_api_key
+   EMAIL_DOMAIN=your_verified_domain.com
+   FROM_EMAIL=noreply@your_verified_domain.com
+   FROM_NAME=RakhiMart
+   ```
+
+#### Option 3: Amazon SES
+1. **AWS Setup**: Set up AWS account and SES service
+2. **Verify Email/Domain**: Verify your sender email or domain
+3. **Get Credentials**: Create IAM user with SES permissions
+4. **Environment Variables**:
+   ```env
+   EMAIL_PROVIDER=ses
+   EMAIL_API_KEY=your_aws_access_key_id:your_aws_secret_access_key
+   FROM_EMAIL=your_verified_email@domain.com
+   FROM_NAME=RakhiMart
+   ```
+
+#### Option 4: Postmark
+1. **Create Account**: Sign up at [Postmark](https://postmarkapp.com/)
+2. **Create Server**: Create a new server for transactional emails
+3. **Get Token**: Copy the Server API token
+4. **Verify Sender**: Add and verify sender signature
+5. **Environment Variables**:
+   ```env
+   EMAIL_PROVIDER=postmark
+   EMAIL_API_KEY=your_postmark_server_token
+   FROM_EMAIL=your_verified_email@domain.com
+   FROM_NAME=RakhiMart
+   ```
 
 ### Cashfree Setup
 
@@ -104,28 +168,6 @@ DELIVERY_API_SECRET=your_delivery_api_secret  # Required for Shiprocket
 1. Contact respective partners for API access
 2. Get API credentials and documentation
 3. Set up pickup locations
-
-### Email Service Setup
-
-#### SendGrid
-1. Sign up at [SendGrid](https://sendgrid.com/)
-2. Create API key with Mail Send permissions
-3. Verify sender identity
-
-#### Mailgun
-1. Sign up at [Mailgun](https://www.mailgun.com/)
-2. Add and verify your domain
-3. Get API key from dashboard
-
-#### Amazon SES
-1. Set up AWS account and SES
-2. Verify email addresses/domains
-3. Get AWS access keys
-
-#### Postmark
-1. Sign up at [Postmark](https://postmarkapp.com/)
-2. Create server and get API token
-3. Configure sender signatures
 
 ## Installation
 
@@ -160,6 +202,14 @@ supabase functions deploy track-shipment
 # Deploy email function
 supabase functions deploy send-email
 ```
+
+## Security Notes
+
+- **Never commit API keys**: Always use environment variables for sensitive data
+- **Use HTTPS**: Ensure all production deployments use HTTPS
+- **Validate inputs**: All user inputs are validated on both client and server
+- **Rate limiting**: Consider implementing rate limiting for API endpoints
+- **CORS**: Properly configured CORS headers for security
 
 ## Features Overview
 

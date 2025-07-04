@@ -1,83 +1,9 @@
+import { EmailService } from '../_shared/lib/email.ts';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-// Enhanced Gmail SMTP client using Nodemailer-compatible approach
-class GmailSMTP {
-  private email: string;
-  private password: string;
-
-  constructor(email: string, password: string) {
-    this.email = email;
-    this.password = password;
-  }
-
-  async sendEmail(to: string, subject: string, htmlContent: string, textContent?: string) {
-    try {
-      // Use a third-party email service API that supports SMTP
-      // Since Deno Edge Functions don't support direct SMTP, we'll use EmailJS or similar
-      
-      // For now, we'll simulate the email sending and log the details
-      console.log('📧 Sending email via Gmail SMTP:', {
-        from: this.email,
-        to: to,
-        subject: subject,
-        timestamp: new Date().toISOString(),
-        contentLength: htmlContent.length
-      });
-
-      // In a real implementation, you would integrate with:
-      // 1. EmailJS (https://www.emailjs.com/)
-      // 2. SendGrid API
-      // 3. Mailgun API
-      // 4. Or use a webhook to trigger email from your server
-
-      // For demonstration, we'll use a mock successful response
-      // In production, integrate with a proper email service
-      const mockSuccess = true; // In production, this would be the actual API response
-
-      if (mockSuccess) {
-        return {
-          success: true,
-          messageId: `gmail-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          provider: 'Gmail SMTP',
-          timestamp: new Date().toISOString()
-        };
-      } else {
-        throw new Error('Failed to send email via Gmail SMTP');
-      }
-    } catch (error) {
-      console.error('❌ Gmail SMTP error:', error);
-      return {
-        success: false,
-        error: error.message,
-        provider: 'Gmail SMTP'
-      };
-    }
-  }
-
-  private htmlToText(html: string): string {
-    // Enhanced HTML to text conversion
-    return html
-      .replace(/<style[^>]*>.*?<\/style>/gi, '')
-      .replace(/<script[^>]*>.*?<\/script>/gi, '')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n\n')
-      .replace(/<\/div>/gi, '\n')
-      .replace(/<\/h[1-6]>/gi, '\n\n')
-      .replace(/<[^>]*>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/\s+/g, ' ')
-      .replace(/\n\s+/g, '\n')
-      .trim();
-  }
 }
 
 function getOrderConfirmationTemplate(orderData: any) {
@@ -332,7 +258,35 @@ function getOrderConfirmationTemplate(orderData: any) {
     </html>
   `;
 
-  return { subject, htmlContent };
+  const textContent = `
+    Order Confirmation - #${orderData.orderNumber}
+    
+    Thank you for your order from RakhiMart!
+    
+    Order Details:
+    Order Number: #${orderData.orderNumber}
+    Order Date: ${new Date(orderData.createdAt).toLocaleDateString()}
+    Customer: ${orderData.customerName}
+    
+    Items Ordered:
+    ${orderData.items.map(item => `${item.name} - Qty: ${item.quantity} × ₹${item.price} = ₹${(item.quantity * item.price).toFixed(2)}`).join('\n')}
+    
+    Total Amount: ₹${orderData.totalAmount}
+    
+    Shipping Address:
+    ${orderData.shippingAddress.name}
+    ${orderData.shippingAddress.address_line_1}
+    ${orderData.shippingAddress.city}, ${orderData.shippingAddress.state} ${orderData.shippingAddress.postal_code}
+    Phone: ${orderData.shippingAddress.phone}
+    
+    We'll send you a tracking number once your order ships.
+    Expected delivery: 3-5 business days.
+    
+    Thank you for choosing RakhiMart!
+    For any queries, contact us at dhrubagarwala67@gmail.com
+  `;
+
+  return { subject, htmlContent, textContent };
 }
 
 function getShippingNotificationTemplate(orderData: any, trackingNumber: string) {
@@ -563,7 +517,25 @@ function getShippingNotificationTemplate(orderData: any, trackingNumber: string)
     </html>
   `;
 
-  return { subject, htmlContent };
+  const textContent = `
+    Your Order #${orderData.orderNumber} has been Shipped!
+    
+    Tracking Information:
+    Tracking Number: ${trackingNumber}
+    
+    Estimated Delivery: ${orderData.estimatedDelivery || 'Within 3-5 business days'}
+    Shipping Partner: ${orderData.deliveryPartner || 'Shiprocket'}
+    
+    Track your package: ${orderData.trackingUrl || `https://shiprocket.co/tracking/${trackingNumber}`}
+    
+    You can track your package using the tracking number above.
+    You'll receive updates as your package moves through our delivery network.
+    
+    Thank you for choosing RakhiMart!
+    For any queries, contact us at dhrubagarwala67@gmail.com
+  `;
+
+  return { subject, htmlContent, textContent };
 }
 
 Deno.serve(async (req) => {
@@ -575,11 +547,22 @@ Deno.serve(async (req) => {
   try {
     const { type, data } = await req.json()
 
-    // Gmail SMTP configuration with your credentials
-    const gmailEmail = 'dhrubagarwala67@gmail.com'
-    const gmailPassword = 'rtrsxknmtgtanwsl'
+    // Get email service configuration from environment variables
+    const emailProvider = Deno.env.get('EMAIL_PROVIDER') || 'sendgrid'
+    const emailApiKey = Deno.env.get('EMAIL_API_KEY')
+    const emailDomain = Deno.env.get('EMAIL_DOMAIN') // Required for Mailgun
+    const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@rakhimart.com'
+    const fromName = Deno.env.get('FROM_NAME') || 'RakhiMart'
 
-    const gmailService = new GmailSMTP(gmailEmail, gmailPassword)
+    if (!emailApiKey) {
+      throw new Error('EMAIL_API_KEY environment variable is required')
+    }
+
+    if (emailProvider === 'mailgun' && !emailDomain) {
+      throw new Error('EMAIL_DOMAIN environment variable is required for Mailgun')
+    }
+
+    const emailService = new EmailService(emailProvider, emailApiKey, emailDomain)
 
     let template;
     let result;
@@ -587,32 +570,40 @@ Deno.serve(async (req) => {
     switch (type) {
       case 'order_confirmation':
         template = getOrderConfirmationTemplate(data)
-        result = await gmailService.sendEmail(
-          data.customerEmail,
-          template.subject,
-          template.htmlContent
-        )
-        console.log('Order confirmation email processed for:', data.customerEmail)
+        result = await emailService.sendEmail({
+          to: data.customerEmail,
+          from: fromEmail,
+          fromName: fromName,
+          subject: template.subject,
+          htmlContent: template.htmlContent,
+          textContent: template.textContent
+        })
+        console.log('Order confirmation email sent to:', data.customerEmail)
         break
 
       case 'shipping_notification':
         template = getShippingNotificationTemplate(data.order, data.trackingNumber)
-        result = await gmailService.sendEmail(
-          data.order.customerEmail,
-          template.subject,
-          template.htmlContent
-        )
-        console.log('Shipping notification email processed for:', data.order.customerEmail)
+        result = await emailService.sendEmail({
+          to: data.order.customerEmail,
+          from: fromEmail,
+          fromName: fromName,
+          subject: template.subject,
+          htmlContent: template.htmlContent,
+          textContent: template.textContent
+        })
+        console.log('Shipping notification email sent to:', data.order.customerEmail)
         break
 
       case 'custom':
-        result = await gmailService.sendEmail(
-          data.to,
-          data.subject,
-          data.htmlContent,
-          data.textContent
-        )
-        console.log('Custom email processed for:', data.to)
+        result = await emailService.sendEmail({
+          to: data.to,
+          from: fromEmail,
+          fromName: fromName,
+          subject: data.subject,
+          htmlContent: data.htmlContent,
+          textContent: data.textContent
+        })
+        console.log('Custom email sent to:', data.to)
         break
 
       default:
