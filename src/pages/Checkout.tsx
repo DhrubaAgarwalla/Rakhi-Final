@@ -223,6 +223,8 @@ const Checkout = () => {
 
   const createGuestUser = async () => {
     try {
+      console.log('🔐 Creating guest user account...');
+      
       // Create user account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -236,30 +238,52 @@ const Checkout = () => {
         }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('❌ Auth signup error:', authError);
+        throw authError;
+      }
 
-      // Create profile
+      console.log('✅ User account created:', authData.user?.id);
+
+      // The profile should be created automatically by the trigger
+      // But let's also try to create it manually as a fallback
       if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: authData.user.id,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            email: formData.email,
-            phone: formData.phone,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+        try {
+          console.log('📝 Creating profile manually as fallback...');
+          
+          // Wait a bit for the trigger to potentially complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Try to create profile using the service role via edge function
+          const profileResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-profile`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              user_id: authData.user.id,
+              email: formData.email,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              phone: formData.phone
+            }),
           });
 
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
+          if (profileResponse.ok) {
+            console.log('✅ Profile created via edge function');
+          } else {
+            console.log('⚠️ Edge function profile creation failed, but continuing...');
+          }
+        } catch (profileError) {
+          console.error('⚠️ Manual profile creation failed:', profileError);
+          // Don't throw here - the trigger might have worked
         }
 
         return authData.user;
       }
     } catch (error) {
-      console.error('Error creating guest user:', error);
+      console.error('❌ Error creating guest user:', error);
       throw error;
     }
   };
@@ -392,11 +416,13 @@ const Checkout = () => {
       if (!user) {
         try {
           currentUser = await createGuestUser();
-          toast.success('Account created! You can verify your email later to access your orders.');
+          if (currentUser) {
+            toast.success('Account created! You can verify your email later to access your orders.');
+          }
         } catch (error) {
-          console.error('Error creating account:', error);
-          toast.error('Failed to create account, but you can still place the order');
-          // Continue with guest checkout
+          console.error('❌ Error creating account:', error);
+          // Continue with guest checkout even if account creation fails
+          toast.error('Account creation failed, but you can still place the order');
         }
       }
 
