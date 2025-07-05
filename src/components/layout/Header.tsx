@@ -111,6 +111,29 @@ const Header = () => {
     { name: 'Traditional', href: '/category/traditional' },
   ];
 
+  const getUserDisplayName = () => {
+    if (!user) return '';
+    
+    // For Google OAuth users, use the name from user metadata
+    if (user.app_metadata?.provider === 'google') {
+      return user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+    }
+    
+    // For email/password users, try to get from profile or use email
+    return user.email?.split('@')[0] || 'User';
+  };
+
+  const getUserAvatar = () => {
+    if (!user) return null;
+    
+    // For Google OAuth users, use the avatar from user metadata
+    if (user.app_metadata?.provider === 'google') {
+      return user.user_metadata?.avatar_url || user.user_metadata?.picture;
+    }
+    
+    return null;
+  };
+
   const MobileMenu = () => (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -124,6 +147,27 @@ const Header = () => {
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-6">
+          {/* User Info */}
+          {user && (
+            <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+              {getUserAvatar() ? (
+                <img 
+                  src={getUserAvatar()} 
+                  alt="Profile" 
+                  className="w-12 h-12 rounded-full"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-festive-gradient rounded-full flex items-center justify-center">
+                  <User className="h-6 w-6 text-white" />
+                </div>
+              )}
+              <div>
+                <p className="font-semibold text-gray-800">{getUserDisplayName()}</p>
+                <p className="text-sm text-gray-600">{user.email}</p>
+              </div>
+            </div>
+          )}
+
           {/* Mobile Search */}
           <form onSubmit={handleSearch} className="mb-6">
             <div className="relative">
@@ -316,7 +360,15 @@ const Header = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative">
-                      <User className="h-5 w-5" />
+                      {getUserAvatar() ? (
+                        <img 
+                          src={getUserAvatar()} 
+                          alt="Profile" 
+                          className="h-8 w-8 rounded-full"
+                        />
+                      ) : (
+                        <User className="h-5 w-5" />
+                      )}
                       {isAdmin && (
                         <Badge className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs p-0 w-3 h-3 rounded-full flex items-center justify-center">
                           <Shield className="h-2 w-2" />
@@ -325,6 +377,10 @@ const Header = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5 text-sm font-medium">
+                      {getUserDisplayName()}
+                    </div>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => navigate('/profile')}><User className="h-4 w-4 mr-2" />Profile</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/orders')}><ShoppingCart className="h-4 w-4 mr-2" />Orders</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/addresses')}><MapPin className="h-4 w-4 mr-2" />Addresses</DropdownMenuItem>
