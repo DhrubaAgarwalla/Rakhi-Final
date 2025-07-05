@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
+import { Heart, Mail, Phone, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   Accordion,
@@ -37,12 +37,7 @@ const Footer = () => {
     }
   ];
 
-  const socialLinks = [
-    { icon: Facebook, href: '#', label: 'Facebook' },
-    { icon: Instagram, href: '#', label: 'Instagram' },
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Youtube, href: '#', label: 'YouTube' }
-  ];
+  
 
   return (
     <footer className="bg-gray-900 text-white">
@@ -68,19 +63,7 @@ const Footer = () => {
               <span className="text-sm">in India</span>
             </div>
             
-            {/* Social Links */}
-            <div className="flex space-x-4">
-              {socialLinks.map((social, index) => (
-                <a
-                  key={index}
-                  href={social.href}
-                  aria-label={social.label}
-                  className="bg-gray-800 hover:bg-festive-gradient p-3 rounded-full transition-all duration-300 transform hover:scale-110"
-                >
-                  <social.icon className="h-5 w-5" />
-                </a>
-              ))}
-            </div>
+            
           </div>
 
           {/* Quick Links & Customer Service */}
@@ -168,21 +151,7 @@ const Footer = () => {
               </div>
             </div>
 
-            {/* Newsletter Signup */}
-            <div className="mt-8 p-4 bg-gray-800 rounded-xl">
-              <h4 className="font-semibold mb-3">Stay Updated</h4>
-              <p className="text-sm text-gray-400 mb-4">Get latest offers and updates</p>
-              <div className="flex">
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-l-lg text-sm focus:outline-none focus:ring-2 focus:ring-festive-gold"
-                />
-                <button className="bg-festive-gradient px-4 py-2 rounded-r-lg text-sm font-semibold hover:opacity-90 transition-opacity">
-                  Subscribe
-                </button>
-              </div>
-            </div>
+            
           </div>
         </div>
 

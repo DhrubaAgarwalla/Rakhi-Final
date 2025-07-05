@@ -13,16 +13,7 @@ const HeroSection = () => {
         <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-festive-orange/30 rounded-full blur-lg animate-pulse delay-500"></div>
         <div className="absolute top-1/4 right-1/4 w-24 h-24 bg-festive-gold/25 rounded-full blur-xl animate-pulse delay-700"></div>
         
-        {/* Floating Elements */}
-        <div className="absolute top-20 right-20 animate-bounce delay-300">
-          <Star className="h-8 w-8 text-festive-gold fill-current opacity-60" />
-        </div>
-        <div className="absolute bottom-32 left-20 animate-bounce delay-700">
-          <Sparkles className="h-6 w-6 text-festive-red opacity-50" />
-        </div>
-        <div className="absolute top-1/3 right-1/3 animate-bounce delay-1000">
-          <Heart className="h-6 w-6 text-festive-orange fill-current opacity-40" />
-        </div>
+        
       </div>
 
       <div className="container mx-auto px-4 relative z-10">

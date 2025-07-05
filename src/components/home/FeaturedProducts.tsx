@@ -1,20 +1,96 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star, Heart, ShoppingCart, Eye, Sparkles, ArrowRight } from 'lucide-react';
+import { Star, Heart, ShoppingCart, Eye, Sparkles, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import useEmblaCarousel from 'embla-carousel-react';
+import AutoScroll from 'embla-carousel-auto-scroll';
 
 import { getImageUrl } from '@/lib/utils';
 
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start' }, [AutoScroll({ playOnInit: true, speed: 0.8 })]);
+  const autoplayRef = useRef(null);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    autoplayRef.current = emblaApi.plugins().autoScroll;
+
+    const startAutoplay = () => {
+      if (autoplayRef.current) {
+        autoplayRef.current.play();
+      }
+    };
+
+    const stopAutoplay = () => {
+      if (autoplayRef.current) {
+        autoplayRef.current.stop();
+      }
+    };
+
+    const onPointerDown = () => {
+      stopAutoplay();
+    };
+
+    const onPointerUp = () => {
+      setTimeout(() => {
+        startAutoplay();
+      }, 2000);
+    };
+
+    emblaApi.on('pointerDown', onPointerDown);
+    emblaApi.on('pointerUp', onPointerUp);
+
+    return () => {
+      emblaApi.off('pointerDown', onPointerDown);
+      emblaApi.off('pointerUp', onPointerUp);
+    };
+  }, [emblaApi]);
+  const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);
+  const [nextBtnDisabled, setNextBtnDisabled] = useState(true);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollSnaps, setScrollSnaps] = useState([]);
+
+  const scrollPrev = useCallback(() => {
+    emblaApi && emblaApi.scrollPrev();
+  }, [emblaApi]);
+
+  const scrollNext = useCallback(() => {
+    emblaApi && emblaApi.scrollNext();
+  }, [emblaApi]);
+
+  const scrollTo = useCallback((index) => {
+    emblaApi && emblaApi.scrollTo(index);
+  }, [emblaApi]);
+
+  const onSelect = useCallback((emblaApi) => {
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+    setPrevBtnDisabled(!emblaApi.canScrollPrev());
+    setNextBtnDisabled(!emblaApi.canScrollNext());
+  }, []);
+
+  const onInit = useCallback((emblaApi) => {
+    setScrollSnaps(emblaApi.scrollSnapList());
+  }, []);
 
   useEffect(() => {
     fetchFeaturedProducts();
   }, []);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    onInit(emblaApi);
+    onSelect(emblaApi);
+    emblaApi.on('reInit', onInit);
+    emblaApi.on('reInit', onSelect);
+    emblaApi.on('select', onSelect);
+  }, [emblaApi, onInit, onSelect]);
 
   const fetchFeaturedProducts = async () => {
     try {
@@ -97,96 +173,103 @@ const FeaturedProducts = () => {
             <p className="text-gray-500 text-lg">No featured products available at the moment.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-            {products.map((product, index) => (
-              <Link to={`/product/${product.slug}`} key={product.id} className="block group">
-                <Card 
-                  className="hover:shadow-2xl transition-all duration-500 overflow-hidden border-0 bg-white hover:-translate-y-2 transform h-full"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <CardContent className="p-0">
-                    {/* Image Container */}
-                    <div className="relative overflow-hidden">
-                      <img 
-                        src={getImageUrl(product.image_url)} 
-                        alt={product.name}
-                        className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700"
-                        onLoad={() => console.log('Image loaded:', getImageUrl(product.image_url))}
-                        onError={(e) => {
-                          console.error('Failed to load product image:', product.image_url, 'Generated URL:', getImageUrl(product.image_url));
-                          e.currentTarget.src = '/placeholder.svg';
-                        }}
-                      />
-                      
-                      {/* Badges */}
-                      <div className="absolute top-3 left-3 flex flex-col gap-2">
-                        {product.original_price > product.price && (
-                          <Badge className="bg-festive-red text-white font-bold">
-                            -{calculateDiscount(product.price, product.original_price)}% OFF
-                          </Badge>
-                        )}
-                        <Badge variant="secondary" className="bg-white/90 text-gray-800">
-                          Featured
-                        </Badge>
-                      </div>
+          <div className="relative">
+            <div className="embla w-full overflow-hidden" ref={emblaRef}>
+              <div className="embla__container flex flex-nowrap gap-4">
+                {products.map((product, index) => (
+                  <div className="embla__slide flex-shrink-0 flex-grow-0 basis-full sm:basis-1/2 lg:basis-1/4" key={product.id}>
+                    <Link to={`/product/${product.slug}`} className="block group h-full">
+                      <Card 
+                        className="hover:shadow-2xl transition-all duration-500 overflow-hidden border-0 bg-white hover:-translate-y-2 transform h-full"
+                      >
+                        <CardContent className="p-0">
+                          {/* Image Container */}
+                          <div className="relative overflow-hidden">
+                            <img 
+                              src={getImageUrl(product.image_url)} 
+                              alt={product.name}
+                              className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700"
+                              onLoad={() => console.log('Image loaded:', getImageUrl(product.image_url))}
+                              onError={(e) => {
+                                console.error('Failed to load product image:', product.image_url, 'Generated URL:', getImageUrl(product.image_url));
+                                e.currentTarget.src = '/placeholder.svg';
+                              }}
+                            />
+                            
+                            {/* Badges */}
+                            <div className="absolute top-3 left-3 flex flex-col gap-2">
+                              {product.original_price > product.price && (
+                                <Badge className="bg-festive-red text-white font-bold">
+                                  -{calculateDiscount(product.price, product.original_price)}% OFF
+                                </Badge>
+                              )}
+                              <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                                Featured
+                              </Badge>
+                            </div>
 
-                      {/* Quick Action Buttons */}
-                      <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                        <Button size="sm" variant="ghost" className="bg-white/90 hover:bg-white h-10 w-10 p-0 rounded-full shadow-lg">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
+                            {/* Quick Action Buttons */}
+                            <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                              <Button size="sm" variant="ghost" className="bg-white/90 hover:bg-white h-10 w-10 p-0 rounded-full shadow-lg">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
 
-                      {/* Quick Add to Cart */}
-                      <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                        <Button className="w-full bg-festive-gradient hover:opacity-90 text-white rounded-full font-semibold">
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                          View Product
-                        </Button>
-                      </div>
+                            {/* Quick Add to Cart */}
+                            <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                              <Button className="w-full bg-festive-gradient hover:opacity-90 text-white rounded-full font-semibold">
+                                <ShoppingCart className="h-4 w-4 mr-2" />
+                                View Product
+                              </Button>
+                            </div>
 
-                      {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    </div>
+                            {/* Gradient Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          </div>
 
-                    {/* Product Details */}
-                    <div className="p-4 lg:p-6">
-                      {/* Category */}
-                      <p className="text-sm text-gray-500 mb-2 font-medium">{product.categories?.name || 'Rakhi'}</p>
-                      
-                      {/* Product Name */}
-                      <h3 className="font-bold text-lg mb-3 group-hover:text-festive-red transition-colors duration-300 line-clamp-2">
-                        {product.name}
-                      </h3>
+                          {/* Product Details */}
+                          <div className="p-4 lg:p-6">
+                            {/* Category */}
+                            <p className="text-sm text-gray-500 mb-2 font-medium">{product.categories?.name || 'Rakhi'}</p>
+                            
+                            {/* Product Name */}
+                            <h3 className="font-bold text-lg mb-3 group-hover:text-festive-red transition-colors duration-300 line-clamp-2">
+                              {product.name}
+                            </h3>
 
-                      {/* Rating */}
-                      <div className="flex items-center space-x-1 mb-4">
-                        <div className="flex">
-                          {renderStars(product.rating)}
-                        </div>
-                        <span className="text-sm text-gray-600 ml-2">
-                          {(product.rating || 0).toFixed(1)} ({product.review_count || '0'})
-                        </span>
-                      </div>
+                            {/* Rating */}
+                            <div className="flex items-center space-x-1 mb-4">
+                              <div className="flex">
+                                {renderStars(product.rating)}
+                              </div>
+                              <span className="text-sm text-gray-600 ml-2">
+                                {(product.rating || 0).toFixed(1)} ({product.review_count || '0'})
+                              </span>
+                            </div>
 
-                      {/* Price */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xl font-bold text-gray-800">₹{product.price}</span>
-                          {product.original_price > product.price && (
-                            <span className="text-sm text-gray-500 line-through">₹{product.original_price}</span>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className="text-xs text-gray-500">In Stock</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                            {/* Price */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xl font-bold text-gray-800">₹{product.price}</span>
+                                {product.original_price > product.price && (
+                                  <span className="text-sm text-gray-500 line-through">₹{product.original_price}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-xs text-gray-500">In Stock</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            
           </div>
         )}
 
