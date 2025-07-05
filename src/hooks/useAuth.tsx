@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,10 +28,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Check for existing session
+    // Check for existing session with error handling
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch(async (error) => {
+      // Handle invalid refresh token errors
+      console.warn('Session retrieval failed:', error);
+      
+      // Clear any stale session data
+      await supabase.auth.signOut();
+      
+      // Reset state to logged out
+      setSession(null);
+      setUser(null);
       setLoading(false);
     });
 
