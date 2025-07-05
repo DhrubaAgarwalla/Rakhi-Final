@@ -79,29 +79,75 @@ Deno.serve(async (req) => {
       console.log('✅ Order items created')
     }
 
-    // If user_id is provided, create/update profile
-    if (user_id && customer_details) {
+    // If user_id is provided, create/update profile and save address
+    if (user_id) {
       try {
-        await fetch(`${supabaseUrl}/rest/v1/profiles`, {
-          method: 'POST',
+        // Update/create profile
+        if (customer_details) {
+          await fetch(`${supabaseUrl}/rest/v1/profiles`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'Content-Type': 'application/json',
+              'apikey': supabaseServiceKey,
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({
+              id: user_id,
+              first_name: customer_details.first_name,
+              last_name: customer_details.last_name,
+              email: customer_details.email,
+              phone: customer_details.phone,
+              updated_at: new Date().toISOString()
+            })
+          })
+          console.log('✅ Profile updated/created')
+        }
+
+        // Save shipping address to addresses table
+        const { name, phone, address_line_1, address_line_2, city, state, postal_code, country } = shipping_address;
+        
+        // Check if an identical address already exists for the user
+        const { data: existingAddresses, error: fetchAddressError } = await fetch(`${supabaseUrl}/rest/v1/addresses?user_id=eq.${user_id}&address_line_1=eq.${encodeURIComponent(address_line_1)}&postal_code=eq.${encodeURIComponent(postal_code)}&limit=1`, {
           headers: {
             'Authorization': `Bearer ${supabaseServiceKey}`,
-            'Content-Type': 'application/json',
             'apikey': supabaseServiceKey,
-            'Prefer': 'resolution=merge-duplicates'
-          },
-          body: JSON.stringify({
-            id: user_id,
-            first_name: customer_details.first_name,
-            last_name: customer_details.last_name,
-            email: customer_details.email,
-            phone: customer_details.phone,
-            updated_at: new Date().toISOString()
-          })
-        })
-        console.log('✅ Profile updated/created')
-      } catch (profileError) {
-        console.error('⚠️ Profile update failed:', profileError)
+          }
+        }).then(res => res.json());
+
+        if (fetchAddressError) {
+          console.error('Error checking existing address:', fetchAddressError);
+        }
+
+        if (!existingAddresses || existingAddresses.length === 0) {
+          // If no identical address exists, insert it
+          await fetch(`${supabaseUrl}/rest/v1/addresses`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'Content-Type': 'application/json',
+              'apikey': supabaseServiceKey,
+            },
+            body: JSON.stringify({
+              user_id: user_id,
+              name,
+              phone,
+              address_line_1,
+              address_line_2,
+              city,
+              state,
+              postal_code,
+              country,
+              is_default: false // New addresses are not default by default
+            })
+          });
+          console.log('✅ Shipping address saved to addresses table');
+        } else {
+          console.log('ℹ️ Identical shipping address already exists, not saving again');
+        }
+
+      } catch (saveError) {
+        console.error('⚠️ Error saving address or updating profile:', saveError);
         // Don't throw, order creation is more important
       }
     }

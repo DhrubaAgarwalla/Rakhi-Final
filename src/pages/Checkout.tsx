@@ -31,6 +31,8 @@ const Checkout = () => {
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(0);
   const [cashfreeLoaded, setCashfreeLoaded] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('new'); // 'new' or address.id
 
   // Form state
   const [formData, setFormData] = useState({
@@ -65,6 +67,7 @@ const Checkout = () => {
     // Pre-fill user data if logged in
     if (user) {
       fetchUserProfile();
+      fetchSavedAddresses();
     }
   }, [user]);
 
@@ -97,6 +100,39 @@ const Checkout = () => {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const fetchSavedAddresses = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('is_default', { ascending: false });
+
+      if (error) throw error;
+      setSavedAddresses(data || []);
+      
+      // If there's a default address, pre-select it
+      const defaultAddress = data.find(addr => addr.is_default);
+      if (defaultAddress) {
+        setSelectedAddressId(defaultAddress.id);
+        setFormData(prev => ({
+          ...prev,
+          name: defaultAddress.name,
+          addressLine1: defaultAddress.address_line_1,
+          addressLine2: defaultAddress.address_line_2,
+          city: defaultAddress.city,
+          state: defaultAddress.state,
+          postalCode: defaultAddress.postal_code,
+          country: defaultAddress.country,
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching saved addresses:', error);
+      toast.error('Failed to load saved addresses.');
     }
   };
 
@@ -673,6 +709,62 @@ const Checkout = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {user && savedAddresses.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="font-semibold mb-2">Use a saved address:</h3>
+                        <RadioGroup
+                          value={selectedAddressId}
+                          onValueChange={(value) => {
+                            setSelectedAddressId(value);
+                            if (value === 'new') {
+                              setFormData(prev => ({
+                                ...prev,
+                                name: '',
+                                addressLine1: '',
+                                addressLine2: '',
+                                city: '',
+                                state: '',
+                                postalCode: '',
+                                country: 'India',
+                              }));
+                            } else {
+                              const selected = savedAddresses.find(addr => addr.id === value);
+                              if (selected) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  name: selected.name,
+                                  addressLine1: selected.address_line_1,
+                                  addressLine2: selected.address_line_2,
+                                  city: selected.city,
+                                  state: selected.state,
+                                  postalCode: selected.postal_code,
+                                  country: selected.country,
+                                }));
+                              }
+                            }
+                          }}
+                          className="space-y-2"
+                        >
+                          {savedAddresses.map((address) => (
+                            <div key={address.id} className="flex items-center space-x-2 p-3 border rounded-md">
+                              <RadioGroupItem value={address.id} id={`address-${address.id}`} />
+                              <Label htmlFor={`address-${address.id}`} className="flex-1 cursor-pointer">
+                                <p className="font-medium">{address.name}</p>
+                                <p className="text-sm text-gray-600">{address.address_line_1}, {address.address_line_2 && `${address.address_line_2}, `}{address.city}, {address.state} - {address.postal_code}</p>
+                              </Label>
+                            </div>
+                          ))}
+                          <div className="flex items-center space-x-2 p-3 border rounded-md">
+                            <RadioGroupItem value="new" id="address-new" />
+                            <Label htmlFor="address-new" className="cursor-pointer">
+                              Enter a new address
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                        <Separator className="my-4" />
+                      </div>
+                    )}
+
                     <div>
                       <Label htmlFor="name">Recipient Name *</Label>
                       <Input
@@ -681,6 +773,7 @@ const Checkout = () => {
                         onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                         className={errors.name ? 'border-red-500' : ''}
                         placeholder="Full name of the person receiving the order"
+                        disabled={selectedAddressId !== 'new'}
                       />
                       {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                     </div>
@@ -693,6 +786,7 @@ const Checkout = () => {
                         onChange={(e) => setFormData(prev => ({ ...prev, addressLine1: e.target.value }))}
                         className={errors.addressLine1 ? 'border-red-500' : ''}
                         placeholder="House number, street name"
+                        disabled={selectedAddressId !== 'new'}
                       />
                       {errors.addressLine1 && <p className="text-red-500 text-sm mt-1">{errors.addressLine1}</p>}
                     </div>
@@ -704,6 +798,7 @@ const Checkout = () => {
                         value={formData.addressLine2}
                         onChange={(e) => setFormData(prev => ({ ...prev, addressLine2: e.target.value }))}
                         placeholder="Apartment, suite, unit, building, floor, etc."
+                        disabled={selectedAddressId !== 'new'}
                       />
                     </div>
 
@@ -715,6 +810,7 @@ const Checkout = () => {
                           value={formData.city}
                           onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
                           className={errors.city ? 'border-red-500' : ''}
+                          disabled={selectedAddressId !== 'new'}
                         />
                         {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
                       </div>
@@ -725,6 +821,7 @@ const Checkout = () => {
                           value={formData.state}
                           onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
                           className={errors.state ? 'border-red-500' : ''}
+                          disabled={selectedAddressId !== 'new'}
                         />
                         {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
                       </div>
@@ -735,6 +832,7 @@ const Checkout = () => {
                           value={formData.postalCode}
                           onChange={(e) => setFormData(prev => ({ ...prev, postalCode: e.target.value }))}
                           className={errors.postalCode ? 'border-red-500' : ''}
+                          disabled={selectedAddressId !== 'new'}
                         />
                         {errors.postalCode && <p className="text-red-500 text-sm mt-1">{errors.postalCode}</p>}
                       </div>
