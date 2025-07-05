@@ -223,6 +223,19 @@ const Checkout = () => {
 
   const createGuestUser = async () => {
     try {
+      console.log('🔐 Checking for existing user...');
+      const { data: existingUser, error: fetchError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', formData.email)
+        .single();
+
+      if (existingUser) {
+        console.log('👤 User already exists. Prompting to login.');
+        toast.error('An account with this email already exists. Please login to continue.');
+        return null; // Indicate that the user should log in
+      }
+
       console.log('🔐 Creating guest user account...');
       
       // Create user account
@@ -416,6 +429,10 @@ const Checkout = () => {
       if (!user) {
         try {
           currentUser = await createGuestUser();
+          if (!currentUser) {
+            setProcessing(false);
+            return;
+          }
           if (currentUser) {
             toast.success('Account created! You can verify your email later to access your orders.');
           }

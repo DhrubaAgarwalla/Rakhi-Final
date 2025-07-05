@@ -127,7 +127,7 @@ const AdminDashboard = () => {
           .lt('created_at', endOfDay.toISOString())
       ]);
 
-      const totalRevenue = ordersResult.data?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
+      const totalRevenue = ordersResult.data?.filter(order => ['confirmed', 'processing', 'shipped', 'delivered'].includes(order.status)).reduce((sum, order) => sum + order.total_amount, 0) || 0;
       const pendingOrders = ordersResult.data?.filter(order => order.status === 'pending').length || 0;
       const confirmedOrders = ordersResult.data?.filter(order => ['confirmed', 'processing', 'shipped', 'delivered'].includes(order.status)).length || 0;
       
@@ -162,6 +162,13 @@ const AdminDashboard = () => {
             first_name,
             last_name,
             email
+          ),
+          order_items (
+            *,
+            products (
+              name,
+              image_url
+            )
           )
         `)
         .order('created_at', { ascending: false })
@@ -392,6 +399,16 @@ const AdminDashboard = () => {
                           minute: '2-digit'
                         })}
                       </p>
+                      {order.order_items && order.order_items.length > 0 && (
+                        <div className="mt-2">
+                          {order.order_items.map((item) => (
+                            <div key={item.id} className="flex items-center gap-2 text-xs text-gray-500">
+                              <img src={item.products.image_url || '/placeholder.svg'} alt={item.products.name} className="w-6 h-6 rounded" />
+                              <span>{item.products.name} (x{item.quantity})</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {order.payment_status && (
                         <p className="text-xs text-gray-500">
                           Payment: {order.payment_status}

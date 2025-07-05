@@ -153,6 +153,33 @@ async function handlePaymentSuccess(supabaseClient: any, paymentData: any) {
   console.log('💰 Payment successful for order:', orderId)
   
   try {
+    // Fetch order status from Cashfree to verify
+    const cashfreeAppId = Deno.env.get('CASHFREE_APP_ID')
+    const cashfreeSecretKey = Deno.env.get('CASHFREE_SECRET_KEY')
+    const cashfreeMode = Deno.env.get('CASHFREE_MODE') || 'production'
+    const apiUrl = cashfreeMode === 'production' 
+      ? `https://api.cashfree.com/pg/orders/${orderId}`
+      : `https://sandbox.cashfree.com/pg/orders/${orderId}`
+
+    const cashfreeResponse = await fetch(apiUrl, {
+      headers: {
+        'x-api-version': '2023-08-01',
+        'x-client-id': cashfreeAppId,
+        'x-client-secret': cashfreeSecretKey,
+      },
+    })
+
+    if (!cashfreeResponse.ok) {
+      console.error('❌ Error fetching order status from Cashfree:', await cashfreeResponse.text())
+      // Don't throw, but log the error and proceed with the webhook data
+    } else {
+      const cashfreeOrder = await cashfreeResponse.json()
+      if (cashfreeOrder.order_status !== 'PAID') {
+        console.warn('⚠️ Cashfree order status is not PAID:', cashfreeOrder.order_status)
+        // Still, we trust the webhook and update our DB
+      }
+    }
+
     // First, get the order details to send confirmation email
     const { data: orderData, error: fetchError } = await supabaseClient
       .from('orders')
