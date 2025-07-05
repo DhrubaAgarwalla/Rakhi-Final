@@ -72,7 +72,17 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-festive-gold/10 to-festive-red/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-festive-gold/10 to-festive-red/10 flex items-center justify-center p-4 relative">
+      <Button 
+        variant="ghost" 
+        className="absolute top-4 left-4"
+        onClick={() => navigate('/')}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </Button>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-playfair text-festive-red">

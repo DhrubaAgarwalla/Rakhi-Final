@@ -168,25 +168,7 @@ const Header = () => {
             </div>
           )}
 
-          {/* Mobile Search */}
-          <form onSubmit={handleSearch} className="mb-6">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search for Rakhi..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-12 pl-4 py-3 border-2 border-gray-200 focus:border-festive-red rounded-full w-full"
-              />
-              <Button 
-                type="submit" 
-                size="sm" 
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-festive-gradient hover:opacity-90 rounded-full h-10 w-10 p-0"
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-          </form>
+          
 
           {/* Navigation Links */}
           <div className="space-y-2">
@@ -236,39 +218,7 @@ const Header = () => {
             </div>
           )}
 
-          {/* Customer Service Links */}
-          <div className="space-y-2 pt-4 border-t border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Help & Support</h3>
-            <Link to="/customer-service" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
-              Customer Service
-            </Link>
-            <Link to="/contact-us" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
-              Contact Us
-            </Link>
-            <Link to="/shipping-info" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
-              Shipping Info
-            </Link>
-            <Link to="/returns-exchanges" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
-              Returns & Exchanges
-            </Link>
-            <Link to="/faq" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
-              FAQ
-            </Link>
-          </div>
-
-          {/* Legal Links */}
-          <div className="space-y-2 pt-4 border-t border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Legal</h3>
-            <Link to="/privacy-policy" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
-              Privacy Policy
-            </Link>
-            <Link to="/terms-of-service" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium border-b border-gray-100">
-              Terms of Service
-            </Link>
-            <Link to="/refund-policy" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium">
-              Refund Policy
-            </Link>
-          </div>
+          
         </div>
       </div>
 
